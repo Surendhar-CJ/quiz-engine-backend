@@ -30,7 +30,12 @@ public class TokenBlacklist {
      * @param token token to be blacklisted
      */
     public void addTokenToBlacklist(String token) {
-        blacklistedTokens.add(validateToken(token));
+        if(!isTokenBlacklisted(token)) {
+            blacklistedTokens.add(validateToken(token));
+        }
+        else {
+            throw new InvalidCredentialsException("The token is blacklisted");
+        }
     }
 
 

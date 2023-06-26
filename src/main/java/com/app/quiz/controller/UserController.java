@@ -1,6 +1,7 @@
 package com.app.quiz.controller;
 
 import com.app.quiz.config.jwt.JWTService;
+import com.app.quiz.config.jwt.TokenBlacklist;
 import com.app.quiz.entity.User;
 import com.app.quiz.requestBody.UserLogin;
 import com.app.quiz.service.UserService;
@@ -17,11 +18,13 @@ public class UserController {
 
     private UserService userService;
     private JWTService jwtService;
+    private TokenBlacklist tokenBlacklist;
 
     @Autowired
-    public UserController(UserService userService, JWTService jwtService) {
+    public UserController(UserService userService, JWTService jwtService, TokenBlacklist tokenBlacklist) {
         this.userService = userService;
         this.jwtService = jwtService;
+        this.tokenBlacklist = tokenBlacklist;
     }
 
     @PostMapping("/users")
@@ -49,4 +52,12 @@ public class UserController {
 
          return new ResponseEntity<>(new UserResponse(user, jwt), HttpStatus.OK);
     }
+
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestBody String token) {
+        tokenBlacklist.addTokenToBlacklist(token);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
 }
