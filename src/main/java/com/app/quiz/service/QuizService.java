@@ -2,11 +2,14 @@ package com.app.quiz.service;
 
 import com.app.quiz.entity.Question;
 import com.app.quiz.entity.Quiz;
-import com.app.quiz.requestBody.StartQuiz;
+import com.app.quiz.requestBody.AnswerResponse;
+import com.app.quiz.requestBody.ConfigureQuiz;
 
 public interface QuizService {
 
-    Quiz createQuiz(StartQuiz startQuiz);
+    Quiz createQuiz(ConfigureQuiz configureQuiz);
 
-    Question questionGenerator(Long quizId, Long topicId);
+    Question startQuiz(Long quizId, Long topicId);
+
+    Question nextQuestion(AnswerResponse answerResponse);
 }
