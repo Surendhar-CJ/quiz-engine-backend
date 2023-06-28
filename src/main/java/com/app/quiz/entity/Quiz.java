@@ -12,7 +12,6 @@ import java.util.Map;
 
 @Data
 @AllArgsConstructor
-@NoArgsConstructor
 @Entity
 @Table(name = "quiz")
 public class Quiz {
@@ -53,6 +52,11 @@ public class Quiz {
         this.servedQuestions = new ArrayList<>();
         this.responses = new HashMap<>();
         this.finalScore = finalScore;
+    }
+
+    public Quiz() {
+        this.servedQuestions = new ArrayList<>();
+        this.responses = new HashMap<>();
     }
 
 }
