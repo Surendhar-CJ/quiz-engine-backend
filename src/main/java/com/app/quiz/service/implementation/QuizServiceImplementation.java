@@ -1,6 +1,7 @@
 package com.app.quiz.service.implementation;
 
 import com.app.quiz.entity.*;
+import com.app.quiz.exception.custom.InvalidInputException;
 import com.app.quiz.exception.custom.ResourceNotFoundException;
 import com.app.quiz.repository.*;
 import com.app.quiz.requestBody.AnswerResponse;
@@ -9,9 +10,7 @@ import com.app.quiz.service.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Controller
 public class QuizServiceImplementation implements QuizService {
@@ -96,7 +95,17 @@ public class QuizServiceImplementation implements QuizService {
             throw new IllegalArgumentException("Quiz is completed");
         }
 
-        Question nextQuestion = nextAdaptiveQuestion(quiz, answerResponse);
+        Optional<Question> lastQuestionOptional = questionRepository.findById(answerResponse.getQuestionId());
+        if (lastQuestionOptional.isEmpty()) {
+            throw new ResourceNotFoundException("Question with id "+answerResponse.getQuestionId()+" is not found");
+        }
+        Question lastQuestion = lastQuestionOptional.get();
+
+        quiz.getResponses().put(lastQuestion, answerResponse.getAnswerChoices());
+
+      //  Question nextQuestion = nextAdaptiveQuestion(quiz, answerResponse, lastQuestion);
+
+        Question nextQuestion = nextRegularQuestion(quiz, answerResponse);
 
         // Add the selected question to the servedQuestions list
         quiz.getServedQuestions().add(nextQuestion);
@@ -131,24 +140,44 @@ public class QuizServiceImplementation implements QuizService {
     }
 
 
-    private Question nextAdaptiveQuestion(Quiz quiz, AnswerResponse answerResponse) {
+
+    //For Regular quiz
+    private Question nextRegularQuestion(Quiz quiz, AnswerResponse answerResponse) {
+            Topic topic = quiz.getTopic();
+            List<Question> servedQuestions = quiz.getServedQuestions();
+            List<Question> questionsList = topic.getQuestionsList();
+            Question nextQuestion = questionsList.stream()
+                    .filter(question -> !servedQuestions.contains(question))
+                    .findAny()
+                    .orElseThrow(() -> new ResourceNotFoundException("No more questions available"));
+
+            return nextQuestion;
+    }
+
+    private Question nextAdaptiveQuestion(Quiz quiz, AnswerResponse answerResponse, Question lastQuestion) {
 
         // Check if last question was answered correctly
-        Optional<Question> lastQuestionOptional = questionRepository.findById(answerResponse.getQuestionId());
-        if (lastQuestionOptional.isEmpty()) {
-            throw new ResourceNotFoundException("Question with id "+answerResponse.getQuestionId()+" is not found");
-        }
-        Question lastQuestion = lastQuestionOptional.get();
-
-        quiz.getResponses().put(lastQuestion, answerResponse.getAnswerChoices());
-
         List<Choice> answerChoices = answerResponse.getAnswerChoices();
         List<Choice> databaseChoices = new ArrayList<>();
 
-        for (Choice choice : answerChoices) {
-            Choice databaseChoice = choiceRepository.findById(choice.getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Choice with id "+choice.getId()+" is not found"));
-            databaseChoices.add(databaseChoice);
+
+        // Convert the last question's choices to a set for faster lookups
+        Set<Choice> lastQuestionChoices = new HashSet<>(lastQuestion.getChoices());
+
+        for(Choice choice : answerChoices) {
+            Optional<Choice> databaseChoiceOptional = choiceRepository.findById((choice.getId()));
+            if(databaseChoiceOptional.isEmpty()) {
+                throw new ResourceNotFoundException("Choice with id "+choice.getId()+" is not found");
+            } else {
+                Choice databaseChoice = databaseChoiceOptional.get();
+
+                // Check if the choice is valid for the last question
+                if (!lastQuestionChoices.contains(databaseChoice)) {
+                    throw new InvalidInputException("Invalid choice id for the given question");
+                }
+
+                databaseChoices.add(databaseChoice);
+            }
         }
 
         boolean isCorrect = true; // Assume all choices are correct
@@ -171,8 +200,8 @@ public class QuizServiceImplementation implements QuizService {
         Topic topic = quiz.getTopic();
         List<Question> allQuestions = topic.getQuestionsList();
         Question nextQuestion = allQuestions.stream()
-                .filter(q -> q.getDifficultyLevel().getLevel().equalsIgnoreCase(nextDifficulty))
-                .filter(q -> !quiz.getServedQuestions().contains(q)) // make sure question hasn't been served before
+                .filter(question -> question.getDifficultyLevel().getLevel().equalsIgnoreCase(nextDifficulty))
+                .filter(question -> !quiz.getServedQuestions().contains(question)) // make sure question hasn't been served before
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("No more questions available"));
 
