@@ -92,53 +92,19 @@ public class QuizServiceImplementation implements QuizService {
             quiz = existingQuiz.get();
         }
 
-        // Check if last question was answered correctly
-        Optional<Question> lastQuestionOptional = questionRepository.findById(answerResponse.getQuestionId());
-        if (lastQuestionOptional.isEmpty()) {
-            throw new ResourceNotFoundException("Question with id "+answerResponse.getQuestionId()+" is not found");
-        }
-        Question lastQuestion = lastQuestionOptional.get();
-
-        quiz.getResponses().put(lastQuestion, answerResponse.getAnswerChoices());
-
-        List<Choice> answerChoices = answerResponse.getAnswerChoices();
-        List<Choice> databaseChoices = new ArrayList<>();
-
-        for (Choice choice : answerChoices) {
-            Choice databaseChoice = choiceRepository.findById(choice.getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Choice with id "+choice.getId()+" is not found"));
-            databaseChoices.add(databaseChoice);
+        if(quiz.getIsCompleted() == true) {
+            throw new IllegalArgumentException("Quiz is completed");
         }
 
-        boolean isCorrect = true; // Assume all choices are correct
-        for (Choice choice : databaseChoices) {
-            System.out.println(choice.isCorrect());
-            if (!choice.isCorrect()) {
-                isCorrect = false; // If any choice is not correct, set isCorrect to false
-                break; // No need to check the rest of the choices
-            }
-        }
-
-        // Select next question based on performance
-        String currentDifficulty = lastQuestion.getDifficultyLevel().getLevel();
-        String nextDifficulty;
-        if (isCorrect) {
-            nextDifficulty = getNextDifficultyLevel(currentDifficulty);
-        } else {
-            nextDifficulty = getPreviousDifficultyLevel(currentDifficulty);
-        }
-
-        Topic topic = quiz.getTopic();
-        List<Question> allQuestions = topic.getQuestionsList();
-        Question nextQuestion = allQuestions.stream()
-                .filter(q -> q.getDifficultyLevel().getLevel().equalsIgnoreCase(nextDifficulty))
-                .filter(q -> !quiz.getServedQuestions().contains(q)) // make sure question hasn't been served before
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("No more questions available"));
+        Question nextQuestion = nextAdaptiveQuestion(quiz, answerResponse);
 
         // Add the selected question to the servedQuestions list
         quiz.getServedQuestions().add(nextQuestion);
+        quiz.setIsCompleted(quiz.quizCompleted());
+
         quizRepository.save(quiz);
+
+
         return nextQuestion;
     }
 
@@ -165,5 +131,52 @@ public class QuizServiceImplementation implements QuizService {
     }
 
 
+    private Question nextAdaptiveQuestion(Quiz quiz, AnswerResponse answerResponse) {
+
+        // Check if last question was answered correctly
+        Optional<Question> lastQuestionOptional = questionRepository.findById(answerResponse.getQuestionId());
+        if (lastQuestionOptional.isEmpty()) {
+            throw new ResourceNotFoundException("Question with id "+answerResponse.getQuestionId()+" is not found");
+        }
+        Question lastQuestion = lastQuestionOptional.get();
+
+        quiz.getResponses().put(lastQuestion, answerResponse.getAnswerChoices());
+
+        List<Choice> answerChoices = answerResponse.getAnswerChoices();
+        List<Choice> databaseChoices = new ArrayList<>();
+
+        for (Choice choice : answerChoices) {
+            Choice databaseChoice = choiceRepository.findById(choice.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Choice with id "+choice.getId()+" is not found"));
+            databaseChoices.add(databaseChoice);
+        }
+
+        boolean isCorrect = true; // Assume all choices are correct
+        for (Choice choice : databaseChoices) {
+            if (!choice.isCorrect()) {
+                isCorrect = false; // If any choice is not correct, set isCorrect to false
+                break; // No need to check the rest of the choices
+            }
+        }
+
+        // Select next question based on performance
+        String currentDifficulty = lastQuestion.getDifficultyLevel().getLevel();
+        String nextDifficulty;
+        if (isCorrect) {
+            nextDifficulty = getNextDifficultyLevel(currentDifficulty);
+        } else {
+            nextDifficulty = getPreviousDifficultyLevel(currentDifficulty);
+        }
+
+        Topic topic = quiz.getTopic();
+        List<Question> allQuestions = topic.getQuestionsList();
+        Question nextQuestion = allQuestions.stream()
+                .filter(q -> q.getDifficultyLevel().getLevel().equalsIgnoreCase(nextDifficulty))
+                .filter(q -> !quiz.getServedQuestions().contains(q)) // make sure question hasn't been served before
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("No more questions available"));
+
+        return nextQuestion;
+    }
 
 }
