@@ -60,7 +60,7 @@ public class Quiz {
     }
 
     public boolean quizCompleted() {
-        return this.getTopic().getQuestionsList() == this.getServedQuestions();
+        return this.getTopic().getQuestionsList().size() == this.getServedQuestions().size();
     }
 
 }
