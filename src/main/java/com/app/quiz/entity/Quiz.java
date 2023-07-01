@@ -59,4 +59,8 @@ public class Quiz {
         this.responses = new HashMap<>();
     }
 
+    public boolean quizCompleted() {
+        return this.getTopic().getQuestionsList() == this.getServedQuestions();
+    }
+
 }
