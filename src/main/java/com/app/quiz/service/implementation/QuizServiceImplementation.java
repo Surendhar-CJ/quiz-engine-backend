@@ -121,7 +121,6 @@ public class QuizServiceImplementation implements QuizService {
         }
 
         Question lastServedQuestion = quiz.getServedQuestions().get(quiz.getServedQuestions().size()-1);
-        System.out.println(lastServedQuestion);
 
         Optional<Question> lastQuestionOptional = questionRepository.findById(answerResponse.getQuestionId());
         if (lastQuestionOptional.isEmpty()) {
@@ -130,7 +129,7 @@ public class QuizServiceImplementation implements QuizService {
 
         //To validate if the answer response contains the correct last question
         Question lastQuestion = lastQuestionOptional.get();
-        System.out.println(lastQuestion);
+
         if (!lastServedQuestion.equals(lastQuestion)) {
             throw new InvalidInputException("Invalid last question received as response");
         }
