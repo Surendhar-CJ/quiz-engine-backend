@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @NoArgsConstructor
@@ -28,6 +29,7 @@ public class Choice {
     private boolean isCorrect;
 
     @JsonIgnore
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "question_id")
     private Question question;

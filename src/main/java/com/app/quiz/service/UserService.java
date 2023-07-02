@@ -1,13 +1,14 @@
 package com.app.quiz.service;
 
+import com.app.quiz.dto.UserDTO;
 import com.app.quiz.entity.User;
 import com.app.quiz.requestBody.UserLogin;
 
 public interface UserService {
 
-    User createUser(User user);
+    UserDTO createUser(User user);
 
-    User getUserById(Long id);
+    UserDTO getUserById(Long id);
 
     /*User updateUser(Long id, User user);
 

@@ -76,7 +76,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
        httpSecurity
                 .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("api/v1/users","/api/v1/login").permitAll()
+                .requestMatchers("/api/v1/users","/api/v1/login").permitAll()
                 .anyRequest().authenticated()
                 )
                 .sessionManagement((session) -> session
