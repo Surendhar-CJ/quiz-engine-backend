@@ -1,5 +1,9 @@
 package com.app.quiz.service.implementation;
 
+import com.app.quiz.dto.QuestionDTO;
+import com.app.quiz.dto.QuizDTO;
+import com.app.quiz.dto.mapper.QuestionDTOMapper;
+import com.app.quiz.dto.mapper.QuizDTOMapper;
 import com.app.quiz.entity.*;
 import com.app.quiz.exception.custom.InvalidCredentialsException;
 import com.app.quiz.exception.custom.InvalidInputException;
@@ -21,17 +25,21 @@ public class QuizServiceImplementation implements QuizService {
     private final UserRepository userRepository;
     private final TopicRepository topicRepository;
     private final QuestionRepository questionRepository;
+    private final QuizDTOMapper quizDTOMapper;
+    private final QuestionDTOMapper questionDTOMapper;
 
     @Autowired
-    public QuizServiceImplementation(QuizRepository quizRepository, UserRepository userRepository, TopicRepository topicRepository, QuestionRepository questionRepository) {
+    public QuizServiceImplementation(QuizRepository quizRepository, UserRepository userRepository, TopicRepository topicRepository, QuestionRepository questionRepository, QuizDTOMapper quizDTOMapper, QuestionDTOMapper questionDTOMapper) {
         this.quizRepository = quizRepository;
         this.userRepository = userRepository;
         this.topicRepository = topicRepository;
         this.questionRepository = questionRepository;
+        this.quizDTOMapper = quizDTOMapper;
+        this.questionDTOMapper = questionDTOMapper;
     }
 
     @Override
-    public Quiz createQuiz(ConfigureQuiz configureQuiz) {
+    public QuizDTO createQuiz(ConfigureQuiz configureQuiz) {
         Optional<User> user = userRepository.findById(configureQuiz.getUserId());
         if(user.isEmpty()) {
             throw new ResourceNotFoundException("User with "+ configureQuiz.getUserId()+" is not found");
@@ -46,11 +54,13 @@ public class QuizServiceImplementation implements QuizService {
 
         Quiz newQuiz = new Quiz(user.get(), topic, false, 0.0);
 
-        return quizRepository.save(newQuiz);
+       quizRepository.save(newQuiz);
+
+       return quizDTOMapper.apply(newQuiz);
     }
 
     @Override
-    public Question startQuiz(Long quizId, Long topicId) {
+    public QuestionDTO startQuiz(Long quizId, Long topicId) {
         Optional<Quiz> existingQuiz = quizRepository.findById(quizId);
 
         Quiz quiz;
@@ -78,7 +88,8 @@ public class QuizServiceImplementation implements QuizService {
         Question question = questions.get(new Random().nextInt(questions.size()));
         quiz.getServedQuestions().add(question);
         quizRepository.save(quiz);
-        return question;
+
+        return questionDTOMapper.apply(question);
 
 
         /* //This is for adaptive quizzing
@@ -95,7 +106,7 @@ public class QuizServiceImplementation implements QuizService {
     }
 
     @Override
-    public Question nextQuestion(AnswerResponse answerResponse) {
+    public QuestionDTO nextQuestion(AnswerResponse answerResponse) {
         Optional<Quiz> existingQuiz = quizRepository.findById(answerResponse.getQuizId());
 
         Quiz quiz;
@@ -110,6 +121,7 @@ public class QuizServiceImplementation implements QuizService {
         }
 
         Question lastServedQuestion = quiz.getServedQuestions().get(quiz.getServedQuestions().size()-1);
+        System.out.println(lastServedQuestion);
 
         Optional<Question> lastQuestionOptional = questionRepository.findById(answerResponse.getQuestionId());
         if (lastQuestionOptional.isEmpty()) {
@@ -118,7 +130,7 @@ public class QuizServiceImplementation implements QuizService {
 
         //To validate if the answer response contains the correct last question
         Question lastQuestion = lastQuestionOptional.get();
-
+        System.out.println(lastQuestion);
         if (!lastServedQuestion.equals(lastQuestion)) {
             throw new InvalidInputException("Invalid last question received as response");
         }
@@ -135,7 +147,7 @@ public class QuizServiceImplementation implements QuizService {
 
         quizRepository.save(quiz);
 
-        return nextQuestion;
+        return questionDTOMapper.apply(nextQuestion);
     }
 
     private String getNextDifficultyLevel(String currentDifficulty) {
