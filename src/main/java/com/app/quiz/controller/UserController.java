@@ -17,9 +17,9 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
 
-    private UserService userService;
-    private JWTService jwtService;
-    private TokenBlacklist tokenBlacklist;
+    private final UserService userService;
+    private final JWTService jwtService;
+    private final TokenBlacklist tokenBlacklist;
 
     @Autowired
     public UserController(UserService userService, JWTService jwtService, TokenBlacklist tokenBlacklist) {
