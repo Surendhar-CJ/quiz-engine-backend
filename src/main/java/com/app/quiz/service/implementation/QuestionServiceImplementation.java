@@ -15,8 +15,8 @@ import java.util.Optional;
 @Service
 public class QuestionServiceImplementation implements QuestionService {
 
-    private QuestionRepository questionRepository;
-    private TopicRepository topicRepository;
+    private final QuestionRepository questionRepository;
+    private final TopicRepository topicRepository;
 
     @Autowired
     public QuestionServiceImplementation(QuestionRepository questionRepository, TopicRepository topicRepository) {

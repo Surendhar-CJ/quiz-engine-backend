@@ -21,15 +21,13 @@ public class QuizServiceImplementation implements QuizService {
     private final UserRepository userRepository;
     private final TopicRepository topicRepository;
     private final QuestionRepository questionRepository;
-    private final ChoiceRepository choiceRepository;
 
     @Autowired
-    public QuizServiceImplementation(QuizRepository quizRepository, UserRepository userRepository, TopicRepository topicRepository, QuestionRepository questionRepository, ChoiceRepository choiceRepository) {
+    public QuizServiceImplementation(QuizRepository quizRepository, UserRepository userRepository, TopicRepository topicRepository, QuestionRepository questionRepository) {
         this.quizRepository = quizRepository;
         this.userRepository = userRepository;
         this.topicRepository = topicRepository;
         this.questionRepository = questionRepository;
-        this.choiceRepository = choiceRepository;
     }
 
     @Override
