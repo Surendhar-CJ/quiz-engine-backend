@@ -39,12 +39,14 @@ public class QuizServiceImplementation implements QuizService {
             throw new ResourceNotFoundException("User with "+ configureQuiz.getUserId()+" is not found");
         }
 
-        Optional<Topic> topic = topicRepository.findById(configureQuiz.getTopicId());
-        if(topic.isEmpty()) {
+        Optional<Topic> existingTopic = topicRepository.findById(configureQuiz.getTopicId());
+        if(existingTopic.isEmpty()) {
             throw new ResourceNotFoundException("Topic with "+ configureQuiz.getTopicId()+" is not found");
         }
+        Topic topic = existingTopic.get();
+        topic.setNumberOfQuestions(topic.getQuestionsList().size());
 
-        Quiz newQuiz = new Quiz(user.get(), topic.get(), false, 0);
+        Quiz newQuiz = new Quiz(user.get(), topic, false, 0.0);
 
         return quizRepository.save(newQuiz);
     }
@@ -165,10 +167,45 @@ public class QuizServiceImplementation implements QuizService {
     //For Regular quiz
     private Question nextRegularQuestion(Quiz quiz, AnswerResponse answerResponse, Question lastQuestion) {
 
+            answerValidation(answerResponse, lastQuestion);
+            grading(quiz, lastQuestion, answerResponse);
+
+            Topic topic = quiz.getTopic();
+            List<Question> servedQuestions = quiz.getServedQuestions();
+            List<Question> questionsList = topic.getQuestionsList();
+            List<Question> remainingQuestions = questionsList.stream()
+                    .filter(question -> !servedQuestions.contains(question))
+                    .toList();
+
+        if (remainingQuestions.isEmpty()) {
+            throw new ResourceNotFoundException("No more questions available");
+        }
+        int randomIndex = new Random().nextInt(remainingQuestions.size());
+        Question nextQuestion = remainingQuestions.get(randomIndex);
+
+        return nextQuestion;
+    }
+
+
+
+    private void answerValidation(AnswerResponse answerResponse, Question lastQuestion) {
         // Check if last question was answered correctly
         List<Choice> answerChoices = answerResponse.getAnswerChoices();
 
-        // Convert the last question's choices to a set for faster lookups
+        // Convert the last question's choice IDs to a set for faster lookups
+        Set<Long> lastQuestionChoiceIds = lastQuestion.getChoices().stream()
+                .map(Choice::getId)
+                .collect(Collectors.toSet());
+
+        for (Choice choice : answerChoices) {
+            // Check if the choice ID is valid for the last question
+            if (!lastQuestionChoiceIds.contains(choice.getId())) {
+                throw new InvalidInputException("Invalid choice id for the given question");
+            }
+        }
+
+
+        /*// Convert the last question's choices to a set for faster lookups
         Set<Choice> lastQuestionChoices = new HashSet<>(lastQuestion.getChoices());
 
         for(Choice choice : answerChoices) {
@@ -182,23 +219,30 @@ public class QuizServiceImplementation implements QuizService {
                     throw new InvalidInputException("Invalid choice id for the given question");
                 }
             }
+        } */
+
+    }
+
+    private void grading(Quiz quiz, Question lastQuestion, AnswerResponse answerResponse) {
+
+        List<Choice> answerChoices = answerResponse.getAnswerChoices();
+        List<Choice> correctChoices = lastQuestion.getChoices().stream().filter((choice) -> choice.isCorrect() == true).toList();
+
+        System.out.println("Answer Choices " + answerChoices);
+        System.out.println("Correct Choices " +correctChoices);
+
+        int numberOfCorrectAnswerChoices = 0;
+        for(Choice correctChoice : correctChoices) {
+            for(Choice answerChoice : answerChoices) {
+                if(correctChoice.getId().equals(answerChoice.getId())) {
+                    numberOfCorrectAnswerChoices++;
+                }
+            }
         }
 
-            Topic topic = quiz.getTopic();
-            List<Question> servedQuestions = quiz.getServedQuestions();
-            List<Question> questionsList = topic.getQuestionsList();
-            List<Question> remainingQuestions = questionsList.stream()
-                    .filter(question -> !servedQuestions.contains(question))
-                    .toList();
+        double answerScore = ((double) numberOfCorrectAnswerChoices / correctChoices.size()) * lastQuestion.getScore();
 
-        if (remainingQuestions.isEmpty()) {
-            throw new ResourceNotFoundException("No more questions available");
-        }
-
-        int randomIndex = new Random().nextInt(remainingQuestions.size());
-        Question nextQuestion = remainingQuestions.get(randomIndex);
-
-        return nextQuestion;
+        quiz.setFinalScore(quiz.getFinalScore() + answerScore);
     }
 
 
@@ -290,5 +334,64 @@ public class QuizServiceImplementation implements QuizService {
 
         return nextQuestion;
     } */
+
+
+    //Without using database for choices
+
+    /*private Question nextAdaptiveQuestion(Quiz quiz, AnswerResponse answerResponse, Question lastQuestion) {
+
+        // Check if last question was answered correctly
+        List<Choice> answerChoices = answerResponse.getAnswerChoices();
+        List<Choice> databaseChoices = new ArrayList<>();
+
+        // Convert the last question's choices to a map for faster lookups
+        Map<Long, Choice> lastQuestionChoicesMap = lastQuestion.getChoices().stream()
+                .collect(Collectors.toMap(Choice::getId, Function.identity()));
+
+        for(Choice choice : answerChoices) {
+            Choice databaseChoice = lastQuestionChoicesMap.get(choice.getId());
+
+            if(databaseChoice == null) {
+                throw new ResourceNotFoundException("Choice with id "+choice.getId()+" is not found");
+            } else {
+                // Check if the choice is valid for the last question
+                if (!lastQuestionChoicesMap.containsKey(databaseChoice.getId())) {
+                    throw new InvalidInputException("Invalid choice id for the given question");
+                }
+
+                databaseChoices.add(databaseChoice);
+            }
+        }
+
+        boolean isCorrect = true; // Assume all choices are correct
+        for (Choice choice : databaseChoices) {
+            if (!choice.isCorrect()) {
+                isCorrect = false; // If any choice is not correct, set isCorrect to false
+                break; // No need to check the rest of the choices
+            }
+        }
+        // Select next question based on performance
+        String currentDifficulty = lastQuestion.getDifficultyLevel().getLevel();
+        String nextDifficulty;
+        if (isCorrect) {
+            nextDifficulty = getNextDifficultyLevel(currentDifficulty);
+        } else {
+            nextDifficulty = getPreviousDifficultyLevel(currentDifficulty);
+        }
+
+        Topic topic = quiz.getTopic();
+        List<Question> allQuestions = topic.getQuestionsList();
+        Question nextQuestion = allQuestions.stream()
+                .filter(question -> question.getDifficultyLevel().getLevel().equalsIgnoreCase(nextDifficulty))
+                .filter(question -> !quiz.getServedQuestions().contains(question)) // make sure question hasn't been served before
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("No more questions available"));
+
+        return nextQuestion;
+
+
+
+    } */
+
 
 }

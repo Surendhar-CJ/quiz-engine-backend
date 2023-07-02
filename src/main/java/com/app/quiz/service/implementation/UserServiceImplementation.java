@@ -1,5 +1,7 @@
 package com.app.quiz.service.implementation;
 
+import com.app.quiz.dto.UserDTO;
+import com.app.quiz.dto.mapper.UserDTOMapper;
 import com.app.quiz.entity.User;
 import com.app.quiz.exception.custom.InvalidCredentialsException;
 import com.app.quiz.exception.custom.InvalidInputException;
@@ -18,32 +20,35 @@ import java.util.Optional;
 @Service
 public class UserServiceImplementation implements UserService {
 
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    private BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final BCryptPasswordEncoder bCryptPasswordEncoder;
+
+    private final UserDTOMapper userDTOMapper;
 
     @Autowired
-    public UserServiceImplementation(UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder) {
+    public UserServiceImplementation(UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder, UserDTOMapper userDTOMapper) {
         this.userRepository = userRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
+        this.userDTOMapper = userDTOMapper;
     }
 
     @Override
-    public User createUser(User user) {
+    public UserDTO createUser(User user) {
         User validatedUser = validateUser(user);
 
         validatedUser.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
         userRepository.save(validatedUser);
 
-        return validatedUser;
+        return userDTOMapper.apply(validatedUser);
     }
 
     @Override
-    public User getUserById(Long id) {
+    public UserDTO getUserById(Long id) {
         Optional<User> user = userRepository.findById(id);
 
         if(user.isPresent()) {
-            return user.get();
+            return userDTOMapper.apply(user.get());
         }
         else {
             throw  new ResourceNotFoundException("User with userId - "+id+" not found");

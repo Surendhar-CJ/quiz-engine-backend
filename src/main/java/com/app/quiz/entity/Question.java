@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,8 +25,15 @@ public class Question {
     @Column(name = "text")
     private String text;
 
+    @Column(name = "score")
+    private Double score;
+
+    @Column(name = "explanation")
+    private String explanation;
+
     @ManyToOne
     @JoinColumn(name = "topic_id")
+    @ToString.Exclude
     private Topic topic;
 
     @ManyToOne
@@ -39,9 +47,10 @@ public class Question {
     @OneToMany(mappedBy = "question")
     private List<Choice> choices;
 
-    public Question(String text, QuestionType type, Topic topic, DifficultyLevel difficultyLevel, List<Choice> choices) {
+    public Question(String text, QuestionType type, Double score, Topic topic, DifficultyLevel difficultyLevel, List<Choice> choices) {
         this.text = text;
         this.type = type;
+        this.score = score;
         this.topic = topic;
         this.difficultyLevel = difficultyLevel;
         this.choices = new ArrayList<>();

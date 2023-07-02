@@ -20,7 +20,10 @@ public class TopicServiceImplementation implements TopicService {
 
     @Override
     public List<Topic> topics() {
-        return topicRepository.findAll();
+        List<Topic> topics =  topicRepository.findAll();
+        for(Topic topic : topics) {
+            topic.setNumberOfQuestions(topic.getQuestionsList().size());
+        }
+        return topics;
     }
-
 }

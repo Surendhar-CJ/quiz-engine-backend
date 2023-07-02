@@ -1,8 +1,13 @@
 package com.app.quiz.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -27,11 +32,16 @@ public class User {
     @Column(name = "password")
     private String password;
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "user")
+    private List<Quiz> quizList;
+
     public User(String firstName, String lastName, String email, String password){
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.password = password;
+        this.quizList = new ArrayList<>();
     }
 
 }

@@ -1,9 +1,7 @@
 package com.app.quiz.entity;
 
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -30,4 +28,6 @@ public class Topic {
     @OneToMany(mappedBy = "topic")
     private List<Question> questionsList;
 
+    @Transient
+    private Integer numberOfQuestions;
 }

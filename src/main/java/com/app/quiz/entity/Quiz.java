@@ -1,9 +1,10 @@
 package com.app.quiz.entity;
 
+import com.app.quiz.utils.FeedbackType;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,8 +30,14 @@ public class Quiz {
     @JoinColumn(name = "topic_id")
     private Topic topic;
 
+    @Transient
+    private FeedbackType feedbackType;
+
     @Column(name = "is_completed")
     private Boolean isCompleted;
+
+    @Column(name = "final_score" )
+    private Double finalScore;
 
     @ManyToMany
     @JoinTable(
@@ -42,10 +49,9 @@ public class Quiz {
     @Transient
     private Map<Question, List<Choice>> responses;
 
-    @Column(name = "final_score" )
-    private int finalScore;
 
-    public Quiz(User user, Topic topic, Boolean isCompleted, int finalScore) {
+
+    public Quiz(User user, Topic topic, Boolean isCompleted, Double finalScore) {
         this.user = user;
         this.topic = topic;
         this.isCompleted = isCompleted;
