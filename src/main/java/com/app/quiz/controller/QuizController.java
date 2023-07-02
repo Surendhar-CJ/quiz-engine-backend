@@ -1,8 +1,8 @@
 package com.app.quiz.controller;
 
 
-import com.app.quiz.entity.Question;
-import com.app.quiz.entity.Quiz;
+import com.app.quiz.dto.QuestionDTO;
+import com.app.quiz.dto.QuizDTO;
 import com.app.quiz.requestBody.AnswerResponse;
 import com.app.quiz.requestBody.ConfigureQuiz;
 import com.app.quiz.requestBody.QuestionRequest;
@@ -25,23 +25,21 @@ public class QuizController {
 
 
     @PostMapping("/quizzes")
-    public ResponseEntity<Quiz> createQuiz(@RequestBody ConfigureQuiz configureQuiz) {
-        Quiz quiz = quizService.createQuiz(configureQuiz);
+    public ResponseEntity<QuizDTO> createQuiz(@RequestBody ConfigureQuiz configureQuiz) {
+        QuizDTO quiz = quizService.createQuiz(configureQuiz);
         return new ResponseEntity<>(quiz, HttpStatus.CREATED);
     }
 
     @PostMapping("/quizzes/quiz-start")
-    public ResponseEntity<Question> startQuiz(@RequestBody QuestionRequest questionRequest) {
-        Question question = quizService.startQuiz(questionRequest.getQuizId(), questionRequest.getTopicId());
+    public ResponseEntity<QuestionDTO> startQuiz(@RequestBody QuestionRequest questionRequest) {
+        QuestionDTO question = quizService.startQuiz(questionRequest.getQuizId(), questionRequest.getTopicId());
         return new ResponseEntity<>(question, HttpStatus.OK);
     }
 
     @PostMapping("/quizzes/quiz-questions")
-    public ResponseEntity<Question> getQuizQuestions(@RequestBody AnswerResponse answerResponse) {
-        Question question = quizService.nextQuestion(answerResponse);
+    public ResponseEntity<QuestionDTO> getQuizQuestions(@RequestBody AnswerResponse answerResponse) {
+        QuestionDTO question = quizService.nextQuestion(answerResponse);
         return new ResponseEntity<>(question, HttpStatus.OK);
     }
-
-
 
 }
