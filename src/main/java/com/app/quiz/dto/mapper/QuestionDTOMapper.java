@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import java.util.function.Function;
 
 @Component
-public class QuestionDTOMapper implements Function<Question, QuestionDTO> {
+public final class QuestionDTOMapper implements Function<Question, QuestionDTO> {
 
     @Override
     public QuestionDTO apply(Question question) {
