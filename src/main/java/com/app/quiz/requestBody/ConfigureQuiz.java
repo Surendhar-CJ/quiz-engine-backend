@@ -1,6 +1,5 @@
 package com.app.quiz.requestBody;
 
-import com.app.quiz.entity.FeedbackType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
