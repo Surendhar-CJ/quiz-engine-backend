@@ -1,6 +1,7 @@
 package com.app.quiz.service.implementation;
 
 import com.app.quiz.dto.QuestionDTO;
+import com.app.quiz.dto.QuestionFeedbackDTO;
 import com.app.quiz.dto.QuizDTO;
 import com.app.quiz.dto.mapper.QuestionDTOMapper;
 import com.app.quiz.dto.mapper.QuizDTOMapper;
@@ -11,6 +12,7 @@ import com.app.quiz.exception.custom.ResourceNotFoundException;
 import com.app.quiz.repository.*;
 import com.app.quiz.requestBody.AnswerResponse;
 import com.app.quiz.requestBody.ConfigureQuiz;
+import com.app.quiz.service.feedback.FeedbackService;
 import com.app.quiz.service.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -25,18 +27,31 @@ public class QuizServiceImplementation implements QuizService {
     private final UserRepository userRepository;
     private final TopicRepository topicRepository;
     private final QuestionRepository questionRepository;
+    private final FeedbackRepository feedbackRepository;
     private final QuizDTOMapper quizDTOMapper;
     private final QuestionDTOMapper questionDTOMapper;
+    private final FeedbackService feedbackService;
 
     @Autowired
-    public QuizServiceImplementation(QuizRepository quizRepository, UserRepository userRepository, TopicRepository topicRepository, QuestionRepository questionRepository, QuizDTOMapper quizDTOMapper, QuestionDTOMapper questionDTOMapper) {
-        this.quizRepository = quizRepository;
-        this.userRepository = userRepository;
-        this.topicRepository = topicRepository;
-        this.questionRepository = questionRepository;
-        this.quizDTOMapper = quizDTOMapper;
-        this.questionDTOMapper = questionDTOMapper;
+    public QuizServiceImplementation(QuizRepository quizRepository,
+                                     UserRepository userRepository,
+                                     TopicRepository topicRepository,
+                                     QuestionRepository questionRepository,
+                                     FeedbackRepository feedbackRepository,
+                                     QuizDTOMapper quizDTOMapper,
+                                     QuestionDTOMapper questionDTOMapper,
+                                     FeedbackService feedbackService) {
+
+                                    this.quizRepository = quizRepository;
+                                    this.userRepository = userRepository;
+                                    this.topicRepository = topicRepository;
+                                    this.questionRepository = questionRepository;
+                                    this.feedbackRepository = feedbackRepository;
+                                    this.quizDTOMapper = quizDTOMapper;
+                                    this.questionDTOMapper = questionDTOMapper;
+                                    this.feedbackService = feedbackService;
     }
+
 
     @Override
     public QuizDTO createQuiz(ConfigureQuiz configureQuiz) {
@@ -52,7 +67,12 @@ public class QuizServiceImplementation implements QuizService {
         Topic topic = existingTopic.get();
         topic.setNumberOfQuestions(topic.getQuestionsList().size());
 
-        Quiz newQuiz = new Quiz(user.get(), topic, false, 0.0);
+        Optional<Feedback> feedback = feedbackRepository.findById(configureQuiz.getFeedbackId());
+        if(feedback.isEmpty()) {
+            throw new ResourceNotFoundException("Feedback with "+ configureQuiz.getFeedbackId()+" is not found");
+        }
+
+        Quiz newQuiz = new Quiz(user.get(), topic, feedback.get(), false, 0.0);
 
        quizRepository.save(newQuiz);
 
@@ -106,7 +126,7 @@ public class QuizServiceImplementation implements QuizService {
     }
 
     @Override
-    public QuestionDTO nextQuestion(AnswerResponse answerResponse) {
+    public QuestionFeedbackDTO nextQuestion(AnswerResponse answerResponse) {
         Optional<Quiz> existingQuiz = quizRepository.findById(answerResponse.getQuizId());
 
         Quiz quiz;
@@ -116,9 +136,6 @@ public class QuizServiceImplementation implements QuizService {
             quiz = existingQuiz.get();
         }
 
-        if(quiz.getIsCompleted() == true) {
-            throw new InvalidCredentialsException("Quiz is completed");
-        }
 
         Question lastServedQuestion = quiz.getServedQuestions().get(quiz.getServedQuestions().size()-1);
 
@@ -134,50 +151,46 @@ public class QuizServiceImplementation implements QuizService {
             throw new InvalidInputException("Invalid last question received as response");
         }
 
+        // Validate the answer choices
+        answerValidation(answerResponse, lastQuestion);
+
+        // Grading the response
+        grading(quiz, lastQuestion, answerResponse);
+
         quiz.getResponses().put(lastQuestion, answerResponse.getAnswerChoices());
+        quizRepository.save(quiz);
 
-      //Question nextQuestion = nextAdaptiveQuestion(quiz, answerResponse, lastQuestion);
+        // If quiz is already completed, we should not proceed further.
+        if(quiz.getIsCompleted() == true) {
+            String feedback = feedbackService.generateFeedback(quiz, lastQuestion, answerResponse);
+            return new QuestionFeedbackDTO(null, feedback);
+        }
 
-        Question nextQuestion = nextRegularQuestion(quiz, answerResponse, lastQuestion);
+        // If the quiz is not completed, get the next question
+        Question nextQuestion = nextRegularQuestion(quiz);
 
         // Add the selected question to the servedQuestions list
         quiz.getServedQuestions().add(nextQuestion);
-        quiz.setIsCompleted(quiz.quizCompleted());
+
+        // Now check if all questions have been served, and if so, mark the quiz as completed
+        if (quiz.quizCompleted()) {
+            quiz.setIsCompleted(true);
+        }
 
         quizRepository.save(quiz);
 
-        return questionDTOMapper.apply(nextQuestion);
+        QuestionDTO questionDTO = questionDTOMapper.apply(nextQuestion);
+        String feedback = feedbackService.generateFeedback(quiz, lastQuestion, answerResponse);
+
+        return new QuestionFeedbackDTO(questionDTO, feedback);
     }
 
-    private String getNextDifficultyLevel(String currentDifficulty) {
-        switch (currentDifficulty.toLowerCase()) {
-            case "easy":
-                return "medium";
-            case "medium":
-                return "hard";
-            default:
-                return "hard";
-        }
-    }
 
-    private String getPreviousDifficultyLevel(String currentDifficulty) {
-        switch (currentDifficulty.toLowerCase()) {
-            case "hard":
-                return "medium";
-            case "medium":
-                return "easy";
-            default:
-                return "easy";
-        }
-    }
 
 
 
     //For Regular quiz
-    private Question nextRegularQuestion(Quiz quiz, AnswerResponse answerResponse, Question lastQuestion) {
-
-            answerValidation(answerResponse, lastQuestion);
-            grading(quiz, lastQuestion, answerResponse);
+    private Question nextRegularQuestion(Quiz quiz) {
 
             Topic topic = quiz.getTopic();
             List<Question> servedQuestions = quiz.getServedQuestions();
@@ -196,7 +209,6 @@ public class QuizServiceImplementation implements QuizService {
     }
 
 
-
     private void answerValidation(AnswerResponse answerResponse, Question lastQuestion) {
         // Check if last question was answered correctly
         List<Choice> answerChoices = answerResponse.getAnswerChoices();
@@ -212,33 +224,12 @@ public class QuizServiceImplementation implements QuizService {
                 throw new InvalidInputException("Invalid choice id for the given question");
             }
         }
-
-
-        /*// Convert the last question's choices to a set for faster lookups
-        Set<Choice> lastQuestionChoices = new HashSet<>(lastQuestion.getChoices());
-
-        for(Choice choice : answerChoices) {
-            Optional<Choice> databaseChoiceOptional = choiceRepository.findById((choice.getId()));
-            if (databaseChoiceOptional.isEmpty()) {
-                throw new ResourceNotFoundException("Choice with id " + choice.getId() + " is not found");
-            } else {
-                Choice databaseChoice = databaseChoiceOptional.get();
-                // Check if the choice is valid for the last question
-                if (!lastQuestionChoices.contains(databaseChoice)) {
-                    throw new InvalidInputException("Invalid choice id for the given question");
-                }
-            }
-        } */
-
     }
 
     private void grading(Quiz quiz, Question lastQuestion, AnswerResponse answerResponse) {
 
         List<Choice> answerChoices = answerResponse.getAnswerChoices();
         List<Choice> correctChoices = lastQuestion.getChoices().stream().filter((choice) -> choice.isCorrect() == true).toList();
-
-        System.out.println("Answer Choices " + answerChoices);
-        System.out.println("Correct Choices " +correctChoices);
 
         int numberOfCorrectAnswerChoices = 0;
         for(Choice correctChoice : correctChoices) {
@@ -253,7 +244,6 @@ public class QuizServiceImplementation implements QuizService {
 
         quiz.setFinalScore(quiz.getFinalScore() + answerScore);
     }
-
 
 
   /*  private Question nextDifficultyBasedQuestion(Quiz quiz, AnswerResponse answerResponse, Question lastQuestion) {
@@ -277,6 +267,7 @@ public class QuizServiceImplementation implements QuizService {
             }
         }
 
+
         Topic topic = quiz.getTopic();
         List<Question> servedQuestions = quiz.getServedQuestions();
         List<Question> questionsList = topic.getQuestionsList();
@@ -288,6 +279,28 @@ public class QuizServiceImplementation implements QuizService {
 
         return nextQuestion;
 
+    }
+
+    private String getNextDifficultyLevel(String currentDifficulty) {
+        switch (currentDifficulty.toLowerCase()) {
+            case "easy":
+                return "medium";
+            case "medium":
+                return "hard";
+            default:
+                return "hard";
+        }
+    }
+
+    private String getPreviousDifficultyLevel(String currentDifficulty) {
+        switch (currentDifficulty.toLowerCase()) {
+            case "hard":
+                return "medium";
+            case "medium":
+                return "easy";
+            default:
+                return "easy";
+        }
     }
 
     private Question nextAdaptiveQuestion(Quiz quiz, AnswerResponse answerResponse, Question lastQuestion) {

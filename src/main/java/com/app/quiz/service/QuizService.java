@@ -1,6 +1,7 @@
 package com.app.quiz.service;
 
 import com.app.quiz.dto.QuestionDTO;
+import com.app.quiz.dto.QuestionFeedbackDTO;
 import com.app.quiz.dto.QuizDTO;
 import com.app.quiz.entity.Question;
 import com.app.quiz.entity.Quiz;
@@ -13,5 +14,5 @@ public interface QuizService {
 
     QuestionDTO startQuiz(Long quizId, Long topicId);
 
-    QuestionDTO nextQuestion(AnswerResponse answerResponse);
+    QuestionFeedbackDTO nextQuestion(AnswerResponse answerResponse);
 }
