@@ -2,6 +2,7 @@ package com.app.quiz.controller;
 
 
 import com.app.quiz.dto.QuestionDTO;
+import com.app.quiz.dto.QuestionFeedbackDTO;
 import com.app.quiz.dto.QuizDTO;
 import com.app.quiz.requestBody.AnswerResponse;
 import com.app.quiz.requestBody.ConfigureQuiz;
@@ -37,8 +38,8 @@ public class QuizController {
     }
 
     @PostMapping("/quizzes/quiz-questions")
-    public ResponseEntity<QuestionDTO> getQuizQuestions(@RequestBody AnswerResponse answerResponse) {
-        QuestionDTO question = quizService.nextQuestion(answerResponse);
+    public ResponseEntity<QuestionFeedbackDTO> getQuizQuestions(@RequestBody AnswerResponse answerResponse) {
+        QuestionFeedbackDTO question = quizService.nextQuestion(answerResponse);
         return new ResponseEntity<>(question, HttpStatus.OK);
     }
 

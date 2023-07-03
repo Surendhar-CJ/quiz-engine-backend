@@ -77,7 +77,7 @@ public class SecurityConfig {
        httpSecurity
                 .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/api/v1/users","/api/v1/login").permitAll()
-                .anyRequest().authenticated()
+                .anyRequest().permitAll()
                 )
                 .sessionManagement((session) -> session
                     .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
