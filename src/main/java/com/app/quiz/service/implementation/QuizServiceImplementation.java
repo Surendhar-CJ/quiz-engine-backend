@@ -187,8 +187,13 @@ public class QuizServiceImplementation implements QuizService {
         quizRepository.save(quiz);
 
         QuestionDTO questionDTO = questionDTOMapper.apply(nextQuestion);
-        String feedback = feedbackService.generateFeedback(quiz, lastQuestion, answerResponse);
-
+        String feedback;
+        if(quiz.getFeedbackType().getType().equalsIgnoreCase("DELAYED_ELABORATED")) {
+            feedback ="";
+        }
+        else {
+            feedback = feedbackService.generateFeedback(quiz, lastQuestion, answerResponse);
+        }
         return new QuestionFeedbackDTO(questionDTO, feedback);
     }
 
