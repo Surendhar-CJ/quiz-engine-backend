@@ -29,6 +29,7 @@ public class QuizServiceImplementation implements QuizService {
     private final TopicRepository topicRepository;
     private final QuestionRepository questionRepository;
     private final FeedbackRepository feedbackRepository;
+    private final ResponseRepository responseRepository;
     private final QuizDTOMapper quizDTOMapper;
     private final QuestionDTOMapper questionDTOMapper;
     private final FeedbackService feedbackService;
@@ -39,6 +40,7 @@ public class QuizServiceImplementation implements QuizService {
                                      TopicRepository topicRepository,
                                      QuestionRepository questionRepository,
                                      FeedbackRepository feedbackRepository,
+                                     ResponseRepository responseRepository,
                                      QuizDTOMapper quizDTOMapper,
                                      QuestionDTOMapper questionDTOMapper,
                                      FeedbackService feedbackService) {
@@ -48,6 +50,7 @@ public class QuizServiceImplementation implements QuizService {
                                     this.topicRepository = topicRepository;
                                     this.questionRepository = questionRepository;
                                     this.feedbackRepository = feedbackRepository;
+                                    this.responseRepository = responseRepository;
                                     this.quizDTOMapper = quizDTOMapper;
                                     this.questionDTOMapper = questionDTOMapper;
                                     this.feedbackService = feedbackService;
@@ -158,7 +161,10 @@ public class QuizServiceImplementation implements QuizService {
         // Grading the response
         grading(quiz, lastQuestion, answerResponse);
 
-        quiz.getResponses().put(lastQuestion, answerResponse.getAnswerChoices());
+        //Adding the response
+        Response response = addResponse(quiz, lastQuestion, answerResponse);
+        responseRepository.save(response);
+
         quizRepository.save(quiz);
 
         // If quiz is already completed, we should not proceed further.
@@ -185,6 +191,16 @@ public class QuizServiceImplementation implements QuizService {
 
         return new QuestionFeedbackDTO(questionDTO, feedback);
     }
+
+    private Response addResponse(Quiz quiz, Question question, AnswerResponse answerResponse) {
+        Response response = new Response(quiz, question);
+        List<Choice> userChoices = answerResponse.getAnswerChoices(); // assuming this method returns a list of choices
+        response.getChoices().addAll(userChoices);
+        quiz.getResponses().add(response);
+
+        return response;
+    }
+
 
 
     //For Regular quiz
@@ -271,8 +287,13 @@ public class QuizServiceImplementation implements QuizService {
 
 
         for(Question question : questionsServed) {
-            userAnswerChoices.put(question.getId(), quiz.getResponses().get(question));
+            List<Response> responses = quiz.getResponses();
+            userAnswerChoices.put(question.getId(), responses.stream()
+                    .filter(response -> response.getQuestion().equals(question))
+                    .flatMap(response -> response.getChoices().stream()) // flatMap to flatten the lists of choices
+                    .collect(Collectors.toList())); // collect to get a list
         }
+
 
         for(Question question : questionsServed) {
             List<Choice> correct = question.getChoices().stream().filter(choice -> choice.isCorrect()).toList();
