@@ -45,8 +45,8 @@ public class Quiz {
             inverseJoinColumns = @JoinColumn(name = "question_id"))
     private List<Question> servedQuestions;
 
-    @Transient
-    private Map<Question, List<Choice>> responses;
+    @OneToMany(mappedBy = "quiz")
+    private List<Response> responses;
 
 
 
@@ -56,13 +56,13 @@ public class Quiz {
         this.feedbackType = feedbackType;
         this.isCompleted = isCompleted;
         this.servedQuestions = new ArrayList<>();
-        this.responses = new HashMap<>();
+        this.responses = new ArrayList<>();
         this.finalScore = finalScore;
     }
 
     public Quiz() {
         this.servedQuestions = new ArrayList<>();
-        this.responses = new HashMap<>();
+        this.responses = new ArrayList<>();
     }
 
     public boolean quizCompleted() {
