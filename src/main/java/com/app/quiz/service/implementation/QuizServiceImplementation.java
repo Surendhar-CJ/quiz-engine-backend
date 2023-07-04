@@ -14,6 +14,7 @@ import com.app.quiz.requestBody.AnswerResponse;
 import com.app.quiz.requestBody.ConfigureQuiz;
 import com.app.quiz.service.feedback.FeedbackService;
 import com.app.quiz.service.QuizService;
+import com.app.quiz.utils.QuizResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -186,9 +187,6 @@ public class QuizServiceImplementation implements QuizService {
     }
 
 
-
-
-
     //For Regular quiz
     private Question nextRegularQuestion(Quiz quiz) {
 
@@ -226,6 +224,7 @@ public class QuizServiceImplementation implements QuizService {
         }
     }
 
+
     private void grading(Quiz quiz, Question lastQuestion, AnswerResponse answerResponse) {
 
         List<Choice> answerChoices = answerResponse.getAnswerChoices();
@@ -244,6 +243,67 @@ public class QuizServiceImplementation implements QuizService {
 
         quiz.setFinalScore(quiz.getFinalScore() + answerScore);
     }
+
+
+    public QuizResult finishQuiz(Long quizId) {
+        Optional<Quiz> existingQuiz = quizRepository.findById(quizId);
+
+        Quiz quiz;
+        if(existingQuiz.isEmpty()) {
+            throw new ResourceNotFoundException("Quiz with "+quizId+" is not found");
+        } else {
+            quiz = existingQuiz.get();
+        }
+
+        if(!quiz.getIsCompleted()) {
+            throw new InvalidCredentialsException("Quiz is not completed");
+        }
+
+        Long userId = quiz.getUser().getId();
+
+
+        List<Question> questionsServed = quiz.getServedQuestions();
+        List<QuestionDTO> questionsServedDTOs = questionsServed.stream().map(questionDTOMapper).toList();
+
+        Map<Long, List<Choice>> userAnswerChoices = new HashMap<>();
+        Map<Long, List<Choice>> correctAnswerChoices = new HashMap<>();
+        Map<Long, String> answerExplanation = new HashMap<>();
+
+
+        for(Question question : questionsServed) {
+            userAnswerChoices.put(question.getId(), quiz.getResponses().get(question));
+        }
+
+        for(Question question : questionsServed) {
+            List<Choice> correct = question.getChoices().stream().filter(choice -> choice.isCorrect()).toList();
+            correctAnswerChoices.put(question.getId(), correct);
+        }
+
+        for(Question question : questionsServed) {
+            answerExplanation.put(question.getId(), question.getExplanation());
+        }
+
+        Integer totalNoOfQuestions = quiz.getServedQuestions().size();
+        Double totalNumberOfMarks = quiz.getServedQuestions().stream()
+                                                        .map(question -> question.getScore())
+                                                        .reduce(0.0, (a, b) -> a + b);
+        Double finalScore = quiz.getFinalScore() ;
+        Double finalPercentage = ((double) finalScore/totalNumberOfMarks) * 100;
+
+
+
+        QuizResult quizResult = new QuizResult(quiz.getId(), userId, totalNoOfQuestions, totalNumberOfMarks, finalScore, finalPercentage, questionsServedDTOs, userAnswerChoices, correctAnswerChoices, answerExplanation);
+
+        return quizResult;
+    }
+
+
+
+
+
+
+
+
 
 
   /*  private Question nextDifficultyBasedQuestion(Quiz quiz, AnswerResponse answerResponse, Question lastQuestion) {
