@@ -38,6 +38,7 @@ public class Quiz {
     @Column(name = "final_score" )
     private Double finalScore;
 
+    @OrderColumn(name = "question_order")
     @ManyToMany
     @JoinTable(
             name = "quiz_question",

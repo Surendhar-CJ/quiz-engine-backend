@@ -14,6 +14,7 @@ import com.app.quiz.requestBody.AnswerResponse;
 import com.app.quiz.requestBody.ConfigureQuiz;
 import com.app.quiz.service.feedback.FeedbackService;
 import com.app.quiz.service.QuizService;
+import com.app.quiz.utils.FeedbackResponse;
 import com.app.quiz.utils.QuizResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -169,8 +170,8 @@ public class QuizServiceImplementation implements QuizService {
 
         // If quiz is already completed, we should not proceed further.
         if(quiz.getIsCompleted() == true) {
-            String feedback = feedbackService.generateFeedback(quiz, lastQuestion, answerResponse);
-            return new QuestionFeedbackDTO(null, feedback);
+            FeedbackResponse feedbackResponse = feedbackService.generateFeedback(quiz, lastQuestion, answerResponse);
+            return new QuestionFeedbackDTO(null, feedbackResponse);
         }
 
         // If the quiz is not completed, get the next question
@@ -187,14 +188,14 @@ public class QuizServiceImplementation implements QuizService {
         quizRepository.save(quiz);
 
         QuestionDTO questionDTO = questionDTOMapper.apply(nextQuestion);
-        String feedback;
+        FeedbackResponse feedbackResponse;
         if(quiz.getFeedbackType().getType().equalsIgnoreCase("DELAYED_ELABORATED")) {
-            feedback ="";
+            feedbackResponse = null;
         }
         else {
-            feedback = feedbackService.generateFeedback(quiz, lastQuestion, answerResponse);
+            feedbackResponse = feedbackService.generateFeedback(quiz, lastQuestion, answerResponse);
         }
-        return new QuestionFeedbackDTO(questionDTO, feedback);
+        return new QuestionFeedbackDTO(questionDTO, feedbackResponse);
     }
 
     private Response addResponse(Quiz quiz, Question question, AnswerResponse answerResponse) {
