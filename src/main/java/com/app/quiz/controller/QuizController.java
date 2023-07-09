@@ -4,25 +4,32 @@ package com.app.quiz.controller;
 import com.app.quiz.dto.QuestionDTO;
 import com.app.quiz.dto.QuestionFeedbackDTO;
 import com.app.quiz.dto.QuizDTO;
+import com.app.quiz.entity.Feedback;
 import com.app.quiz.requestBody.AnswerResponse;
 import com.app.quiz.requestBody.ConfigureQuiz;
 import com.app.quiz.requestBody.QuestionRequest;
 import com.app.quiz.service.QuizService;
+import com.app.quiz.service.feedback.FeedbackService;
 import com.app.quiz.utils.QuizResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class QuizController {
 
     private final QuizService quizService;
+    private final FeedbackService feedbackService;
 
     @Autowired
-    public QuizController(QuizService quizService) {
+    public QuizController(QuizService quizService, FeedbackService feedbackService) {
         this.quizService = quizService;
+        this.feedbackService = feedbackService;
     }
 
 
@@ -49,5 +56,12 @@ public class QuizController {
         QuizResult quizResult = quizService.finishQuiz(quizId);
         return new ResponseEntity<>(quizResult, HttpStatus.OK);
     }
+
+
+    @GetMapping("/quiz-configuration")
+    public ResponseEntity<List<Feedback>> getFeedbackTypes() {
+        return new ResponseEntity<>(feedbackService.getFeedbackTypes(), HttpStatus.OK);
+    }
+
 
 }
