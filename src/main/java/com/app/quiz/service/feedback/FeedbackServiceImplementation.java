@@ -2,8 +2,10 @@ package com.app.quiz.service.feedback;
 
 
 import com.app.quiz.entity.Choice;
+import com.app.quiz.entity.Feedback;
 import com.app.quiz.entity.Question;
 import com.app.quiz.entity.Quiz;
+import com.app.quiz.repository.FeedbackRepository;
 import com.app.quiz.requestBody.AnswerResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,10 +15,12 @@ import java.util.List;
 @Service
 public  class FeedbackServiceImplementation implements FeedbackService {
     private final FeedbackConfiguration feedbackConfig;
+    private final FeedbackRepository feedbackRepository;
 
     @Autowired
-    public FeedbackServiceImplementation(FeedbackConfiguration feedbackConfig) {
+    public FeedbackServiceImplementation(FeedbackConfiguration feedbackConfig, FeedbackRepository feedbackRepository) {
         this.feedbackConfig = feedbackConfig;
+        this.feedbackRepository = feedbackRepository;
     }
 
     // This method is shared among all feedback types.
@@ -109,4 +113,10 @@ public  class FeedbackServiceImplementation implements FeedbackService {
         }
         throw new IllegalStateException("No correct choice found for the question.");
     }
+
+    @Override
+    public List<Feedback> getFeedbackTypes() {
+        return feedbackRepository.findAll();
+    }
+
 }

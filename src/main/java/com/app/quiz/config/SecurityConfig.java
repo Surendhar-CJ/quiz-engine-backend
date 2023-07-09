@@ -75,10 +75,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
        httpSecurity
+                .cors(cors -> corsConfigurationSource())
+
                 .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/api/v1/users","/api/v1/login").permitAll()
                 .anyRequest().permitAll()
                 )
+
                 .sessionManagement((session) -> session
                     .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )

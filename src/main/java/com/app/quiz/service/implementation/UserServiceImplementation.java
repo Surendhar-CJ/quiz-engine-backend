@@ -64,7 +64,7 @@ public class UserServiceImplementation implements UserService {
         User user = userRepository.findUserByEmail(email);
 
         if(user == null || !user.getEmail().matches(email)) {
-            throw new ResourceNotFoundException("User with this email id does not exist, please check your email");
+            throw new ResourceNotFoundException("User does not exist, please check your email");
         }
         if(!bCryptPasswordEncoder.matches(password, user.getPassword())) {
             throw new InvalidCredentialsException("Invalid password");
@@ -77,6 +77,14 @@ public class UserServiceImplementation implements UserService {
 
 
     private User validateUser(User user) {
+
+        if(user.getFirstName().isEmpty()) {
+            throw new InvalidInputException("Username cannot be empty");
+        }
+
+        if(user.getLastName().isEmpty()) {
+            throw new InvalidInputException("Lastname cannot be empty");
+        }
 
         if(userRepository.findUserByEmail(user.getEmail()) != null) {
             throw new ResourceExistsException("User account with the email exists already");
@@ -91,7 +99,7 @@ public class UserServiceImplementation implements UserService {
         }
 
         if (!user.getPassword().matches(RegexPattern.PASSWORD_PATTERN)) {
-            throw new InvalidInputException("Password should contain at least 8 characters including at least one number and one symbol from !@#$%^&*");
+            throw new InvalidInputException("Password should be at least 8 characters (with at least a number and a symbol from !@#$%^&*)");
         }
 
         return user;
