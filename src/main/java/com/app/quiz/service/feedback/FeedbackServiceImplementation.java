@@ -7,6 +7,7 @@ import com.app.quiz.entity.Question;
 import com.app.quiz.entity.Quiz;
 import com.app.quiz.repository.FeedbackRepository;
 import com.app.quiz.requestBody.AnswerResponse;
+import com.app.quiz.utils.FeedbackResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -39,76 +40,87 @@ public  class FeedbackServiceImplementation implements FeedbackService {
     }
 
     @Override
-    public String generateFeedback(Quiz quiz, Question question, AnswerResponse answerResponse) {
+    public FeedbackResponse generateFeedback(Quiz quiz, Question question, AnswerResponse answerResponse) {
+
+        FeedbackResponse feedbackResponse = null;
         int numberOfCorrectAnswerChoices = countCorrectAnswers(question, answerResponse);
 
         String feedbackType = quiz.getFeedbackType().getType();
-        String feedback ="";
 
         if ("Immediate_Response".equalsIgnoreCase(feedbackType)) {
-            feedback = immediateResponse(question, numberOfCorrectAnswerChoices);
+            feedbackResponse = immediateResponse(question, numberOfCorrectAnswerChoices);
         } else if ("Immediate_Correct_Answer_Response".equalsIgnoreCase(feedbackType)) {
-            feedback = immediateCorrectAnswerResponse(question, numberOfCorrectAnswerChoices);
+            feedbackResponse = immediateCorrectAnswerResponse(question, numberOfCorrectAnswerChoices);
         } else if ("Immediate_Elaborated".equalsIgnoreCase(feedbackType)) {
-            feedback = immediateElaborated(question, numberOfCorrectAnswerChoices);
+            feedbackResponse = immediateElaborated(question, numberOfCorrectAnswerChoices);
         }
 
-        return feedback;
+        return feedbackResponse;
     }
 
 
-    private String immediateResponse(Question question, int numberOfCorrectAnswerChoices) {
-        String feedBack = "";
+    private FeedbackResponse immediateResponse(Question question, int numberOfCorrectAnswerChoices) {
+        String result = "";
         if (question.getType().getType().equalsIgnoreCase("Multiple Choice") || question.getType().getType().equalsIgnoreCase("True or false")) {
             if (numberOfCorrectAnswerChoices == 0) {
-                feedBack = feedbackConfig.getImmediateResponseIncorrectAnswer();
+                result = "Incorrect";
             } else {
-                feedBack = feedbackConfig.getImmediateResponseCorrectAnswer();
+                result = "Correct";
             }
         }
-        return feedBack;
+        FeedbackResponse feedbackResponse;
+
+        Choice correctAnswer = null;
+        String explanation = "";
+
+        feedbackResponse = new FeedbackResponse(result, correctAnswer, explanation);
+
+        return feedbackResponse;
     }
 
 
-    private String immediateCorrectAnswerResponse(Question question, int numberOfCorrectAnswerChoices) {
-
-        String feedBack = "";
+    private FeedbackResponse immediateCorrectAnswerResponse(Question question, int numberOfCorrectAnswerChoices) {
+        String result = "";
         if (question.getType().getType().equalsIgnoreCase("Multiple Choice") || question.getType().getType().equalsIgnoreCase("True or false")) {
             if (numberOfCorrectAnswerChoices == 0) {
-                String correctAnswer = findCorrectAnswer(question);
-                feedBack = feedbackConfig.getImmediateCorrectAnswerResponseFeedbackIncorrectAnswer().replace("{correctAnswer}", correctAnswer);
+                result = "Incorrect";
             } else {
-                feedBack = feedbackConfig.getImmediateCorrectAnswerResponseFeedbackCorrectAnswer();
+                result = "Correct";
             }
         }
+        FeedbackResponse feedbackResponse;
+        Choice correctAnswer = findCorrectAnswer(question);
+        String explanation = "";
 
-        return feedBack;
+        feedbackResponse = new FeedbackResponse(result, correctAnswer, explanation);
+
+        return feedbackResponse;
     }
 
 
-    private String immediateElaborated(Question question, int numberOfCorrectAnswerChoices) {
-        String feedBack = "";
+    private FeedbackResponse immediateElaborated(Question question, int numberOfCorrectAnswerChoices) {
+        String result = "";
+
         if (question.getType().getType().equalsIgnoreCase("Multiple Choice") || question.getType().getType().equalsIgnoreCase("True or false")) {
             if (numberOfCorrectAnswerChoices == 0) {
-                String correctAnswer = findCorrectAnswer(question);
-                String feedbackTemplate = feedbackConfig.getImmediateElaborationFeedbackIncorrectAnswer();
-                feedBack = feedbackTemplate.replace("{correctAnswer}", correctAnswer);
-                feedBack = feedBack.replace("{explanation}", question.getExplanation());
-
+                result = "Incorrect";
             } else {
-                String feedbackTemplate = feedbackConfig.getImmediateElaborationFeedbackCorrectAnswer();
-                feedBack = feedbackTemplate.replace("{explanation}", question.getExplanation());
+                result = "Correct";
             }
         }
+        FeedbackResponse feedbackResponse;
+        Choice correctAnswer = findCorrectAnswer(question);
+        String explanation = question.getExplanation();
 
-        return feedBack;
+        feedbackResponse = new FeedbackResponse(result, correctAnswer, explanation);
+
+        return feedbackResponse;
     }
 
-
-    private String findCorrectAnswer(Question question) {
+    private Choice findCorrectAnswer(Question question) {
         for (Choice choice : question.getChoices()) {
             if (choice.isCorrect()) {
-                return choice.getText();
+                return choice;
             }
         }
         throw new IllegalStateException("No correct choice found for the question.");
