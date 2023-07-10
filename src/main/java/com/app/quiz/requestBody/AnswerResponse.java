@@ -10,5 +10,6 @@ import java.util.List;
 public class AnswerResponse {
     private Long quizId;
     private Long questionId;
+    private int sequenceNumber;
     private List<Choice> answerChoices;
 }
