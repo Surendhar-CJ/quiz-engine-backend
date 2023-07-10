@@ -10,6 +10,7 @@ import com.app.quiz.requestBody.ConfigureQuiz;
 import com.app.quiz.requestBody.QuestionRequest;
 import com.app.quiz.service.QuizService;
 import com.app.quiz.service.feedback.FeedbackService;
+import com.app.quiz.utils.FeedbackResponse;
 import com.app.quiz.utils.QuizResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -46,9 +47,15 @@ public class QuizController {
     }
 
     @PostMapping("/quizzes/quiz-questions")
-    public ResponseEntity<QuestionFeedbackDTO> getQuizQuestions(@RequestBody AnswerResponse answerResponse) {
-        QuestionFeedbackDTO question = quizService.nextQuestion(answerResponse);
+    public ResponseEntity<QuestionDTO> getQuizQuestion(@RequestBody AnswerResponse answerResponse) {
+        QuestionDTO question = quizService.nextQuestion(answerResponse);
         return new ResponseEntity<>(question, HttpStatus.OK);
+    }
+
+    @PostMapping("/quizzes/submit-answer")
+    public ResponseEntity<FeedbackResponse> getFeedback(@RequestBody AnswerResponse answerResponse) {
+            FeedbackResponse feedbackResponse = quizService.getFeedback(answerResponse);
+            return new ResponseEntity<>(feedbackResponse, HttpStatus.OK);
     }
 
     @GetMapping("/quizzes/quiz-finish/{quizId}")

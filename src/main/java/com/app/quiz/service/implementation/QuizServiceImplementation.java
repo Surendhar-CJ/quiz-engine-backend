@@ -19,6 +19,7 @@ import com.app.quiz.utils.QuizResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -131,54 +132,46 @@ public class QuizServiceImplementation implements QuizService {
     }
 
     @Override
-    public QuestionFeedbackDTO nextQuestion(AnswerResponse answerResponse) {
+    public QuestionDTO nextQuestion(AnswerResponse answerResponse) {
         Optional<Quiz> existingQuiz = quizRepository.findById(answerResponse.getQuizId());
 
         Quiz quiz;
         if(existingQuiz.isEmpty()) {
-            throw new ResourceNotFoundException("Quiz with "+answerResponse.getQuizId()+" is not found");
+            throw new ResourceNotFoundException("Quiz with id "+answerResponse.getQuizId()+" is not found");
         } else {
             quiz = existingQuiz.get();
         }
 
-
-        Question lastServedQuestion = quiz.getServedQuestions().get(quiz.getServedQuestions().size()-1);
-
-        Optional<Question> lastQuestionOptional = questionRepository.findById(answerResponse.getQuestionId());
-        if (lastQuestionOptional.isEmpty()) {
-            throw new ResourceNotFoundException("Question with id "+answerResponse.getQuestionId()+" is not found");
-        }
+        int receivedSequence = answerResponse.getSequenceNumber();
+        Question receivedQuestion = quiz.getServedQuestions().get(receivedSequence);
 
         //To validate if the answer response contains the correct last question
-        Question lastQuestion = lastQuestionOptional.get();
-
-        if (!lastServedQuestion.equals(lastQuestion)) {
-            throw new InvalidInputException("Invalid last question received as response");
+        if (!receivedQuestion.equals(questionRepository.findById(answerResponse.getQuestionId()).orElseThrow(
+                () -> new ResourceNotFoundException("Question with id "+answerResponse.getQuestionId()+" is not found")))) {
+            throw new InvalidInputException("Invalid question received as response");
         }
 
         // Validate the answer choices
-        answerValidation(answerResponse, lastQuestion);
+        answerValidation(answerResponse, receivedQuestion);
 
         // Grading the response
-        grading(quiz, lastQuestion, answerResponse);
+        grading(quiz, receivedQuestion, answerResponse);
 
         //Adding the response
-        Response response = addResponse(quiz, lastQuestion, answerResponse);
+        Response response = addResponse(quiz, receivedQuestion, answerResponse);
         responseRepository.save(response);
 
         quizRepository.save(quiz);
 
-        // If quiz is already completed, we should not proceed further.
-        if(quiz.getIsCompleted() == true) {
-            FeedbackResponse feedbackResponse = feedbackService.generateFeedback(quiz, lastQuestion, answerResponse);
-            return new QuestionFeedbackDTO(null, feedbackResponse);
-        }
-
         // If the quiz is not completed, get the next question
-        Question nextQuestion = nextRegularQuestion(quiz);
-
-        // Add the selected question to the servedQuestions list
-        quiz.getServedQuestions().add(nextQuestion);
+        Question nextQuestion;
+        if (receivedSequence < quiz.getServedQuestions().size() - 1) {
+            nextQuestion = quiz.getServedQuestions().get(receivedSequence + 1);
+        } else {
+            nextQuestion = nextRegularQuestion(quiz);
+            // Add the selected question to the servedQuestions list
+            quiz.getServedQuestions().add(nextQuestion);
+        }
 
         // Now check if all questions have been served, and if so, mark the quiz as completed
         if (quiz.quizCompleted()) {
@@ -188,25 +181,66 @@ public class QuizServiceImplementation implements QuizService {
         quizRepository.save(quiz);
 
         QuestionDTO questionDTO = questionDTOMapper.apply(nextQuestion);
+
+        return questionDTO;
+    }
+
+    @Override
+    public FeedbackResponse getFeedback(AnswerResponse answerResponse) {
+        Optional<Quiz> existingQuiz = quizRepository.findById(answerResponse.getQuizId());
+
+        Quiz quiz;
+        if(existingQuiz.isEmpty()) {
+            throw new ResourceNotFoundException("Quiz with id "+answerResponse.getQuizId()+" is not found");
+        } else {
+            quiz = existingQuiz.get();
+        }
+
+        int receivedSequence = answerResponse.getSequenceNumber();
+        Question receivedQuestion = quiz.getServedQuestions().get(receivedSequence);
+
+        //To validate if the answer response contains the correct last question
+        if (!receivedQuestion.equals(questionRepository.findById(answerResponse.getQuestionId()).orElseThrow(
+                () -> new ResourceNotFoundException("Question with id "+answerResponse.getQuestionId()+" is not found")))) {
+            throw new InvalidInputException("Invalid question received as response");
+        }
+
+        // Validate the answer choices
+        answerValidation(answerResponse, receivedQuestion);
+
         FeedbackResponse feedbackResponse;
         if(quiz.getFeedbackType().getType().equalsIgnoreCase("DELAYED_ELABORATED")) {
             feedbackResponse = null;
         }
         else {
-            feedbackResponse = feedbackService.generateFeedback(quiz, lastQuestion, answerResponse);
+            feedbackResponse = feedbackService.generateFeedback(quiz, receivedQuestion, answerResponse);
         }
-        return new QuestionFeedbackDTO(questionDTO, feedbackResponse);
+
+        return feedbackResponse;
     }
 
+
     private Response addResponse(Quiz quiz, Question question, AnswerResponse answerResponse) {
-        Response response = new Response(quiz, question);
-        List<Choice> userChoices = answerResponse.getAnswerChoices(); // assuming this method returns a list of choices
-        response.getChoices().addAll(userChoices);
-        quiz.getResponses().add(response);
+        // Find the existing response for the current question
+        Optional<Response> existingResponse = quiz.getResponses().stream()
+                .filter(response -> response.getQuestion().equals(question))
+                .findFirst();
+
+        Response response;
+        if (existingResponse.isPresent()) {
+            // If a response exists, update its choices
+            response = existingResponse.get();
+            response.getChoices().clear();
+            response.getChoices().addAll(answerResponse.getAnswerChoices());
+        } else {
+            // If a response does not exist, create a new one
+            response = new Response(quiz, question);
+            response.getChoices().addAll(answerResponse.getAnswerChoices());
+            quiz.getResponses().add(response);
+        }
 
         return response;
     }
-
 
 
     //For Regular quiz
@@ -240,28 +274,31 @@ public class QuizServiceImplementation implements QuizService {
 
         for (Choice choice : answerChoices) {
             // Check if the choice ID is valid for the last question
-            if (!lastQuestionChoiceIds.contains(choice.getId())) {
+            if (choice != null && !lastQuestionChoiceIds.contains(choice.getId())) {
                 throw new InvalidInputException("Invalid choice id for the given question");
             }
         }
     }
 
 
-    private void grading(Quiz quiz, Question lastQuestion, AnswerResponse answerResponse) {
+    private void grading(Quiz quiz, Question question, AnswerResponse answerResponse) {
 
         List<Choice> answerChoices = answerResponse.getAnswerChoices();
-        List<Choice> correctChoices = lastQuestion.getChoices().stream().filter((choice) -> choice.isCorrect() == true).toList();
+        List<Choice> correctChoices = question.getChoices().stream().filter((choice) -> choice.isCorrect() == true).toList();
 
         int numberOfCorrectAnswerChoices = 0;
         for(Choice correctChoice : correctChoices) {
             for(Choice answerChoice : answerChoices) {
+                if(answerChoice == null) {
+                    continue;
+                }
                 if(correctChoice.getId().equals(answerChoice.getId())) {
                     numberOfCorrectAnswerChoices++;
                 }
             }
         }
 
-        double answerScore = ((double) numberOfCorrectAnswerChoices / correctChoices.size()) * lastQuestion.getScore();
+        double answerScore = ((double) numberOfCorrectAnswerChoices / correctChoices.size()) * question.getScore();
 
         quiz.setFinalScore(quiz.getFinalScore() + answerScore);
     }
@@ -315,8 +352,9 @@ public class QuizServiceImplementation implements QuizService {
                                                         .map(question -> question.getScore())
                                                         .reduce(0.0, (a, b) -> a + b);
         Double finalScore = quiz.getFinalScore() ;
-        Double finalPercentage = ((double) finalScore/totalNumberOfMarks) * 100;
-
+        double finalPercentage = ((double) finalScore/totalNumberOfMarks) * 100;
+        DecimalFormat df = new DecimalFormat("#.##");
+        finalPercentage = Double.valueOf(df.format(finalPercentage));
 
 
         QuizResult quizResult = new QuizResult(quiz.getId(), userId, totalNoOfQuestions, totalNumberOfMarks, finalScore, finalPercentage, questionsServedDTOs, userAnswerChoices, correctAnswerChoices, answerExplanation);
