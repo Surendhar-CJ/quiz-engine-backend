@@ -1,7 +1,6 @@
 package com.app.quiz.service.implementation;
 
 import com.app.quiz.dto.QuestionDTO;
-import com.app.quiz.dto.QuestionFeedbackDTO;
 import com.app.quiz.dto.QuizDTO;
 import com.app.quiz.dto.mapper.QuestionDTOMapper;
 import com.app.quiz.dto.mapper.QuizDTOMapper;
@@ -357,7 +356,7 @@ public class QuizServiceImplementation implements QuizService {
         finalPercentage = Double.valueOf(df.format(finalPercentage));
 
 
-        QuizResult quizResult = new QuizResult(quiz.getId(), userId, totalNoOfQuestions, totalNumberOfMarks, finalScore, finalPercentage, questionsServedDTOs, userAnswerChoices, correctAnswerChoices, answerExplanation);
+        QuizResult quizResult = new QuizResult(quiz.getId(), userId, quiz.getIsCompleted(), totalNoOfQuestions, totalNumberOfMarks, finalScore, finalPercentage, questionsServedDTOs, userAnswerChoices, correctAnswerChoices, answerExplanation);
 
         return quizResult;
     }
