@@ -1,6 +1,9 @@
 package com.app.quiz.service.implementation;
 
+import com.app.quiz.dto.QuizDTO;
 import com.app.quiz.dto.UserDTO;
+import com.app.quiz.dto.UserQuizDTO;
+import com.app.quiz.dto.mapper.QuizDTOMapper;
 import com.app.quiz.dto.mapper.UserDTOMapper;
 import com.app.quiz.entity.Quiz;
 import com.app.quiz.entity.Topic;
@@ -19,10 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class UserServiceImplementation implements UserService {
@@ -31,16 +31,17 @@ public class UserServiceImplementation implements UserService {
     private final QuizRepository quizRepository;
     private final TopicRepository topicRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
-
     private final UserDTOMapper userDTOMapper;
+    private final QuizDTOMapper quizDTOMapper;
 
     @Autowired
-    public UserServiceImplementation(UserRepository userRepository, QuizRepository quizRepository, TopicRepository topicRepository, BCryptPasswordEncoder bCryptPasswordEncoder, UserDTOMapper userDTOMapper) {
+    public UserServiceImplementation(UserRepository userRepository, QuizRepository quizRepository, TopicRepository topicRepository, BCryptPasswordEncoder bCryptPasswordEncoder, UserDTOMapper userDTOMapper, QuizDTOMapper quizDTOMapper) {
         this.userRepository = userRepository;
         this.quizRepository = quizRepository;
         this.topicRepository = topicRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.userDTOMapper = userDTOMapper;
+        this.quizDTOMapper = quizDTOMapper;
     }
 
     @Override
@@ -54,21 +55,36 @@ public class UserServiceImplementation implements UserService {
     }
 
     @Override
-    public UserDTO getUserById(Long id) {
-        Optional<User> user = userRepository.findById(id);
+    public UserQuizDTO getUserById(Long id) {
+        Optional<User> existingUser = userRepository.findById(id);
 
-        if(user.isPresent()) {
-            return userDTOMapper.apply(user.get());
+        User user;
+        if(existingUser.isPresent()) {
+            user = existingUser.get();
         }
         else {
-            throw  new ResourceNotFoundException("User with userId - "+id+" not found");
+            throw new ResourceNotFoundException("User with userId - "+id+" not found");
         }
 
+        List<QuizDTO> userQuizzesDTO = user.getQuizList().stream()
+                .filter(quiz -> quiz.getIsCompleted())
+                .map(quiz -> quizDTOMapper.apply(quiz))
+                .toList();
+        Map<Long, Double> averageScoreByTopic = averageScoreByTopic(user);
 
+        UserQuizDTO userQuizDTO = new UserQuizDTO(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                userQuizzesDTO,
+                averageScoreByTopic
+        );
+        return userQuizDTO;
     }
 
     @Override
-    public User login(UserLogin userLogin) {
+    public UserDTO login(UserLogin userLogin) {
 
         final String email = userLogin.getUsername();
         final String password = userLogin.getPassword();
@@ -82,26 +98,47 @@ public class UserServiceImplementation implements UserService {
             throw new InvalidCredentialsException("Invalid password");
         }
 
-        return user;
+        return userDTOMapper.apply(user);
     }
 
-    private Map<Topic, Double> averageScoreByTopic(User user) {
+    private Map<Long, Double> averageScoreByTopic(User user) {
         List<Quiz> quizList = user.getQuizList();
-        Map<Topic, Double> averageScoreByTopic = new HashMap<>();
+        Map<Long, Double> sumScoreByTopic = new HashMap<>();
+        Map<Long, Integer> countByTopic = new HashMap<>();
 
         for(Quiz quiz : quizList) {
-            Topic topic = quiz.getTopic();
-            Double finalScore = quiz.getFinalScore();
-            if(averageScoreByTopic.containsKey(topic)) {
-                Double averageScore = ((double) averageScoreByTopic.get(topic) + finalScore) / 2 ;
-                averageScoreByTopic.replace(topic, finalScore, averageScore);
+            if(!quiz.getIsCompleted()) {
+                continue;
             }
+
             else {
-                averageScoreByTopic.put(topic, finalScore);
+                Long topicId = quiz.getTopic().getId();
+                Double finalScore = quiz.getFinalScore();
+
+                // Handle sum of scores
+                if (sumScoreByTopic.containsKey(topicId)) {
+                    sumScoreByTopic.put(topicId, sumScoreByTopic.get(topicId) + finalScore);
+                } else {
+                    sumScoreByTopic.put(topicId, finalScore);
+                }
+
+                // Handle count of quizzes
+                if (countByTopic.containsKey(topicId)) {
+                    countByTopic.put(topicId, countByTopic.get(topicId) + 1);
+                } else {
+                    countByTopic.put(topicId, 1);
+                }
             }
         }
+
+        Map<Long, Double> averageScoreByTopic = new HashMap<>();
+        for (Long topicId : sumScoreByTopic.keySet()) {
+            averageScoreByTopic.put(topicId, sumScoreByTopic.get(topicId) / countByTopic.get(topicId));
+        }
+
         return averageScoreByTopic;
     }
+
 
     private User validateUser(User user) {
 

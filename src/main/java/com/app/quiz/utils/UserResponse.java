@@ -1,6 +1,6 @@
 package com.app.quiz.utils;
 
-import com.app.quiz.entity.User;
+import com.app.quiz.dto.UserDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -8,6 +8,6 @@ import lombok.Data;
 @AllArgsConstructor
 public final class UserResponse {
 
-    private User user;
+    private UserDTO user;
     private String token;
 }
