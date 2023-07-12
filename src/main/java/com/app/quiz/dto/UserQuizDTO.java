@@ -1,5 +1,7 @@
 package com.app.quiz.dto;
 
+import com.app.quiz.utils.QuizResult;
+
 import java.util.List;
 import java.util.Map;
 
@@ -8,7 +10,7 @@ public record UserQuizDTO (
     String firstName,
     String lastName,
     String email,
-    List<QuizDTO> quizList,
+    List<QuizResult> quizList,
     Map<Long, Double> averageScoreByTopic
 )
 
