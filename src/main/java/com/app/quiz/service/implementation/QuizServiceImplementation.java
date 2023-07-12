@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import java.text.DecimalFormat;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -77,7 +78,7 @@ public class QuizServiceImplementation implements QuizService {
             throw new ResourceNotFoundException("Feedback with "+ configureQuiz.getFeedbackId()+" is not found");
         }
 
-        Quiz newQuiz = new Quiz(user.get(), topic, feedback.get(), false, 0.0);
+        Quiz newQuiz = new Quiz(user.get(), topic, feedback.get(), false, 0.0, LocalDateTime.now());
 
        quizRepository.save(newQuiz);
 

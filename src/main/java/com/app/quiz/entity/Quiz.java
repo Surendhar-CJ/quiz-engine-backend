@@ -3,10 +3,11 @@ package com.app.quiz.entity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 
 @Data
@@ -38,6 +39,9 @@ public class Quiz {
     @Column(name = "final_score" )
     private Double finalScore;
 
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
     @OrderColumn(name = "question_order")
     @ManyToMany
     @JoinTable(
@@ -51,14 +55,16 @@ public class Quiz {
 
 
 
-    public Quiz(User user, Topic topic, Feedback feedbackType, Boolean isCompleted, Double finalScore) {
+    public Quiz(User user, Topic topic, Feedback feedbackType, Boolean isCompleted, Double finalScore, LocalDateTime createdAt) {
         this.user = user;
         this.topic = topic;
         this.feedbackType = feedbackType;
         this.isCompleted = isCompleted;
+        this.finalScore = finalScore;
+        this.createdAt = createdAt;
         this.servedQuestions = new ArrayList<>();
         this.responses = new ArrayList<>();
-        this.finalScore = finalScore;
+
     }
 
     public Quiz() {

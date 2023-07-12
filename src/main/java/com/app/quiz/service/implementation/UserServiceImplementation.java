@@ -2,11 +2,15 @@ package com.app.quiz.service.implementation;
 
 import com.app.quiz.dto.UserDTO;
 import com.app.quiz.dto.mapper.UserDTOMapper;
+import com.app.quiz.entity.Quiz;
+import com.app.quiz.entity.Topic;
 import com.app.quiz.entity.User;
 import com.app.quiz.exception.custom.InvalidCredentialsException;
 import com.app.quiz.exception.custom.InvalidInputException;
 import com.app.quiz.exception.custom.ResourceExistsException;
 import com.app.quiz.exception.custom.ResourceNotFoundException;
+import com.app.quiz.repository.QuizRepository;
+import com.app.quiz.repository.TopicRepository;
 import com.app.quiz.repository.UserRepository;
 import com.app.quiz.requestBody.UserLogin;
 import com.app.quiz.service.UserService;
@@ -15,20 +19,26 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
 public class UserServiceImplementation implements UserService {
 
     private final UserRepository userRepository;
-
+    private final QuizRepository quizRepository;
+    private final TopicRepository topicRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
     private final UserDTOMapper userDTOMapper;
 
     @Autowired
-    public UserServiceImplementation(UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder, UserDTOMapper userDTOMapper) {
+    public UserServiceImplementation(UserRepository userRepository, QuizRepository quizRepository, TopicRepository topicRepository, BCryptPasswordEncoder bCryptPasswordEncoder, UserDTOMapper userDTOMapper) {
         this.userRepository = userRepository;
+        this.quizRepository = quizRepository;
+        this.topicRepository = topicRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.userDTOMapper = userDTOMapper;
     }
@@ -53,6 +63,8 @@ public class UserServiceImplementation implements UserService {
         else {
             throw  new ResourceNotFoundException("User with userId - "+id+" not found");
         }
+
+
     }
 
     @Override
@@ -73,8 +85,23 @@ public class UserServiceImplementation implements UserService {
         return user;
     }
 
+    private Map<Topic, Double> averageScoreByTopic(User user) {
+        List<Quiz> quizList = user.getQuizList();
+        Map<Topic, Double> averageScoreByTopic = new HashMap<>();
 
-
+        for(Quiz quiz : quizList) {
+            Topic topic = quiz.getTopic();
+            Double finalScore = quiz.getFinalScore();
+            if(averageScoreByTopic.containsKey(topic)) {
+                Double averageScore = ((double) averageScoreByTopic.get(topic) + finalScore) / 2 ;
+                averageScoreByTopic.replace(topic, finalScore, averageScore);
+            }
+            else {
+                averageScoreByTopic.put(topic, finalScore);
+            }
+        }
+        return averageScoreByTopic;
+    }
 
     private User validateUser(User user) {
 
