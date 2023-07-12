@@ -11,6 +11,6 @@ public final class QuizDTOMapper implements Function<Quiz, QuizDTO> {
 
     @Override
     public QuizDTO apply(Quiz quiz) {
-        return new QuizDTO(quiz.getId(), quiz.getUser().getId(), quiz.getTopic(), quiz.getFeedbackType(), quiz.getIsCompleted(), quiz.getFinalScore(), quiz.getCreatedAt());
+        return new QuizDTO(quiz.getId(), quiz.getUser().getId(), quiz.getTopic(), quiz.getFeedbackType(), quiz.getIsCompleted(), quiz.getFinalScore(), quiz.getCreatedAt(), quiz.getServedQuestions(), quiz.getResponses());
     }
 }
