@@ -3,6 +3,7 @@ package com.app.quiz.controller;
 import com.app.quiz.config.jwt.JWTService;
 import com.app.quiz.config.jwt.TokenBlacklist;
 import com.app.quiz.dto.UserDTO;
+import com.app.quiz.dto.UserQuizDTO;
 import com.app.quiz.entity.User;
 import com.app.quiz.requestBody.UserLogin;
 import com.app.quiz.service.UserService;
@@ -36,8 +37,8 @@ public class UserController {
     }
 
     @GetMapping("/users/{userId}")
-    public ResponseEntity<UserDTO> getUser(@PathVariable("userId") Long userId) {
-        UserDTO user = userService.getUserById(userId);
+    public ResponseEntity<UserQuizDTO> getUser(@PathVariable("userId") Long userId) {
+        UserQuizDTO user = userService.getUserById(userId);
         return new ResponseEntity<>(user, HttpStatus.FOUND);
     }
 
@@ -48,7 +49,7 @@ public class UserController {
              throw new IllegalArgumentException("User login object cannot be null");
          }
 
-         User user = userService.login(userLogin);
+         UserDTO user = userService.login(userLogin);
 
          final String jwt = jwtService.generateToken(userLogin.getUsername());
 
