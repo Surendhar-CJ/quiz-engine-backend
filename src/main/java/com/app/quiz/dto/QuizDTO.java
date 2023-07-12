@@ -2,6 +2,7 @@ package com.app.quiz.dto;
 
 import com.app.quiz.entity.Feedback;
 import com.app.quiz.entity.Topic;
+import java.time.LocalDateTime;
 
 
 public record QuizDTO (
@@ -10,7 +11,8 @@ public record QuizDTO (
     Topic topic,
     Feedback feedbackType,
     Boolean isCompleted,
-    Double finalScore
+    Double finalScore,
+    LocalDateTime createdAt
 )
 
 {}
