@@ -32,6 +32,7 @@ public class QuizServiceImplementation implements QuizService {
     private final QuestionRepository questionRepository;
     private final FeedbackRepository feedbackRepository;
     private final ResponseRepository responseRepository;
+    private final DifficultyLevelRepository difficultyLevelRepository;
     private final QuizDTOMapper quizDTOMapper;
     private final QuestionDTOMapper questionDTOMapper;
     private final FeedbackService feedbackService;
@@ -43,6 +44,7 @@ public class QuizServiceImplementation implements QuizService {
                                      QuestionRepository questionRepository,
                                      FeedbackRepository feedbackRepository,
                                      ResponseRepository responseRepository,
+                                     DifficultyLevelRepository difficultyLevelRepository,
                                      QuizDTOMapper quizDTOMapper,
                                      QuestionDTOMapper questionDTOMapper,
                                      FeedbackService feedbackService) {
@@ -53,6 +55,7 @@ public class QuizServiceImplementation implements QuizService {
                                     this.questionRepository = questionRepository;
                                     this.feedbackRepository = feedbackRepository;
                                     this.responseRepository = responseRepository;
+                                    this.difficultyLevelRepository = difficultyLevelRepository;
                                     this.quizDTOMapper = quizDTOMapper;
                                     this.questionDTOMapper = questionDTOMapper;
                                     this.feedbackService = feedbackService;
@@ -78,7 +81,22 @@ public class QuizServiceImplementation implements QuizService {
             throw new ResourceNotFoundException("Feedback with "+ configureQuiz.getFeedbackId()+" is not found");
         }
 
-        Quiz newQuiz = new Quiz(user.get(), topic, feedback.get(), false, 0.0, LocalDateTime.now());
+        if(configureQuiz.getQuestionsLimit() != null && configureQuiz.getQuestionsLimit() > topic.getQuestionsList().size()) {
+            throw new InvalidInputException("Requested number of questions exceed available questions for this topic");
+        }
+
+        DifficultyLevel difficultyLevel = null;
+        if(configureQuiz.getDifficultyLevel() != null) {
+            Optional<DifficultyLevel> existingDifficultyLevel = difficultyLevelRepository.findByLevel(configureQuiz.getDifficultyLevel().toUpperCase());
+            if(existingDifficultyLevel.isEmpty()) {
+                throw new ResourceNotFoundException("Difficult level "+configureQuiz.getDifficultyLevel()+ " is not found");
+            }
+            else {
+                difficultyLevel = existingDifficultyLevel.get();
+            }
+        }
+
+        Quiz newQuiz = new Quiz(user.get(), topic, feedback.get(), false, configureQuiz.getQuestionsLimit(), difficultyLevel, 0.0, LocalDateTime.now());
 
        quizRepository.save(newQuiz);
 
@@ -109,8 +127,22 @@ public class QuizServiceImplementation implements QuizService {
             topic = existingTopic.get();
         }
 
-        // Pick first question
-        List<Question> questions = topic.getQuestionsList();
+        List<Question> questions;
+        if(quiz.getDifficultyLevel() != null) {
+            // If a difficulty level is specified, only get questions with the matching difficulty level
+            questions = topic.getQuestionsList().stream()
+                    .filter(question -> question.getDifficultyLevel().getLevel().equalsIgnoreCase(quiz.getDifficultyLevel().getLevel()))
+                    .collect(Collectors.toList());
+        } else {
+            // No difficulty level specified, get all questions
+            questions = topic.getQuestionsList();
+        }
+
+        if (questions.isEmpty()) {
+            throw new ResourceNotFoundException("No questions available for the specified difficulty level");
+        }
+
+        // Pick a question randomly
         Question question = questions.get(new Random().nextInt(questions.size()));
         quiz.getServedQuestions().add(question);
         quizRepository.save(quiz);
@@ -174,7 +206,8 @@ public class QuizServiceImplementation implements QuizService {
         }
 
         // Now check if all questions have been served, and if so, mark the quiz as completed
-        if (quiz.quizCompleted()) {
+        Integer effectiveQuestionLimit = quiz.getQuestionsLimit() != null ? quiz.getQuestionsLimit() : quiz.getTopic().getQuestionsList().size();
+        if (quiz.getServedQuestions().size() >= effectiveQuestionLimit) {
             quiz.setIsCompleted(true);
         }
 
@@ -245,17 +278,35 @@ public class QuizServiceImplementation implements QuizService {
 
     //For Regular quiz
     private Question nextRegularQuestion(Quiz quiz) {
-
-            Topic topic = quiz.getTopic();
-            List<Question> servedQuestions = quiz.getServedQuestions();
-            List<Question> questionsList = topic.getQuestionsList();
-            List<Question> remainingQuestions = questionsList.stream()
-                    .filter(question -> !servedQuestions.contains(question))
-                    .toList();
-
-        if (remainingQuestions.isEmpty()) {
-            throw new ResourceNotFoundException("No more questions available");
+        Integer effectiveQuestionLimit = quiz.getQuestionsLimit() != null ? quiz.getQuestionsLimit() : quiz.getTopic().getQuestionsList().size();
+        if (quiz.getServedQuestions().size() >= effectiveQuestionLimit) {
+            throw new ResourceNotFoundException("Questions limit reached");
         }
+        Topic topic = quiz.getTopic();
+        List<Question> servedQuestions = quiz.getServedQuestions();
+        List<Question> questionsList = topic.getQuestionsList();
+        List<Question> remainingQuestions;
+
+        // If a difficulty level is specified, only get questions with the matching difficulty level
+        if(quiz.getDifficultyLevel() != null) {
+            remainingQuestions = questionsList.stream()
+                    .filter(question -> !servedQuestions.contains(question))
+                    .filter(question -> question.getDifficultyLevel().getLevel().equalsIgnoreCase(quiz.getDifficultyLevel().getLevel()))
+                    .collect(Collectors.toList());
+
+            if (remainingQuestions.isEmpty()) {
+                throw new ResourceNotFoundException("No more questions available for the specified difficulty level");
+            }
+        } else {
+            remainingQuestions = questionsList.stream()
+                    .filter(question -> !servedQuestions.contains(question))
+                    .collect(Collectors.toList());
+
+            if (remainingQuestions.isEmpty()) {
+                throw new ResourceNotFoundException("No more questions available");
+            }
+        }
+
         int randomIndex = new Random().nextInt(remainingQuestions.size());
         Question nextQuestion = remainingQuestions.get(randomIndex);
 
@@ -357,7 +408,22 @@ public class QuizServiceImplementation implements QuizService {
         finalPercentage = Double.valueOf(df.format(finalPercentage));
 
 
-        QuizResult quizResult = new QuizResult(quiz.getId(), userId, quiz.getTopic(),quiz.getIsCompleted(), totalNoOfQuestions, totalNumberOfMarks, finalScore, finalPercentage, quiz.getCreatedAt(), questionsServedDTOs, userAnswerChoices, correctAnswerChoices, answerExplanation);
+        QuizResult quizResult = new QuizResult(quiz.getId(),
+                                               userId,
+                                               quiz.getTopic(),
+                                               quiz.getIsCompleted(),
+                                               totalNoOfQuestions,
+                                               quiz.getQuestionsLimit(),
+                                               quiz.getDifficultyLevel() != null ? quiz.getDifficultyLevel().getLevel() : null,
+                                               totalNumberOfMarks,
+                                               finalScore,
+                                               finalPercentage,
+                                               quiz.getCreatedAt(),
+                                               questionsServedDTOs,
+                                               userAnswerChoices,
+                                               correctAnswerChoices,
+                                               answerExplanation
+                    );
 
         return quizResult;
     }

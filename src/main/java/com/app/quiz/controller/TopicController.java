@@ -1,5 +1,6 @@
 package com.app.quiz.controller;
 
+import com.app.quiz.dto.TopicDTO;
 import com.app.quiz.entity.Topic;
 import com.app.quiz.service.TopicService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,7 @@ public class TopicController {
     }
 
     @GetMapping("")
-    public ResponseEntity<List<Topic>> getTopics() {
+    public ResponseEntity<List<TopicDTO>> getTopics() {
        return new ResponseEntity<>(topicService.topics(), HttpStatus.OK);
     }
 }

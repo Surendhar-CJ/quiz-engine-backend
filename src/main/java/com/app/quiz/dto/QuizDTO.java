@@ -14,6 +14,8 @@ public record QuizDTO (
         Topic topic,
         Feedback feedbackType,
         Boolean isCompleted,
+        Integer questionsLimit,
+        String difficultyLevel,
         Double finalScore,
         LocalDateTime createdAt,
         List<Question> servedQuestions,

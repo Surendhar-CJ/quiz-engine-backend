@@ -38,6 +38,13 @@ public class Quiz {
     @Column(name = "is_completed")
     private Boolean isCompleted;
 
+    @Column(name = "questions_limit")
+    private Integer questionsLimit;
+
+    @ManyToOne
+    @JoinColumn(name = "difficulty_level_id")
+    private DifficultyLevel difficultyLevel;
+
     @Column(name = "final_score" )
     private Double finalScore;
 
@@ -57,16 +64,17 @@ public class Quiz {
 
 
 
-    public Quiz(User user, Topic topic, Feedback feedbackType, Boolean isCompleted, Double finalScore, LocalDateTime createdAt) {
+    public Quiz(User user, Topic topic, Feedback feedbackType, Boolean isCompleted, Integer questionsLimit, DifficultyLevel difficultyLevel, Double finalScore, LocalDateTime createdAt) {
         this.user = user;
         this.topic = topic;
         this.feedbackType = feedbackType;
         this.isCompleted = isCompleted;
+        this.questionsLimit = questionsLimit;
+        this.difficultyLevel = difficultyLevel;
         this.finalScore = finalScore;
         this.createdAt = createdAt;
         this.servedQuestions = new ArrayList<>();
         this.responses = new ArrayList<>();
-
     }
 
     public Quiz() {
