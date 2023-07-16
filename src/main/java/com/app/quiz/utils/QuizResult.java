@@ -19,6 +19,8 @@ public final class QuizResult {
         private Topic topic;
         private Boolean isQuizCompleted;
         private Integer noOfQuestions;
+        private Integer questionsLimit;
+        private String difficultyLevel;
         private Double totalNumberOfMarks;
         private Double finalScore;
         private Double finalPercentage;
