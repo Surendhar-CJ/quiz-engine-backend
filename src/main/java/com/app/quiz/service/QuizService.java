@@ -17,5 +17,7 @@ public interface QuizService {
 
     FeedbackResponse getFeedback(AnswerResponse answerResponse);
 
-    QuizResult finishQuiz(Long quizId);
+    void submitQuiz(Long quizId);
+
+    QuizResult getQuizResult(Long quizId);
 }

@@ -65,7 +65,7 @@ public class UserServiceImplementation implements UserService {
 
         List<QuizResult> userQuizzes = user.getQuizList().stream()
                 .filter(quiz -> quiz.getIsCompleted())
-                .map(quiz -> quizServiceImplementation.finishQuiz(quiz.getId()))
+                .map(quiz -> quizServiceImplementation.getQuizResult(quiz.getId()))
                 .toList();
 
         Map<Long, Double> averageScoreByTopic = averagePercentageByTopic(user);

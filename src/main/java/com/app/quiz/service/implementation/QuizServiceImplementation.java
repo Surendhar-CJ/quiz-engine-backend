@@ -145,6 +145,13 @@ public class QuizServiceImplementation implements QuizService {
         // Pick a question randomly
         Question question = questions.get(new Random().nextInt(questions.size()));
         quiz.getServedQuestions().add(question);
+
+        // Check if all questions have been served, and if so, mark the quiz as completed -> QuestionLimit 1.
+        Integer effectiveQuestionLimit = quiz.getQuestionsLimit() != null ? quiz.getQuestionsLimit() : quiz.getTopic().getQuestionsList().size();
+        if (quiz.getServedQuestions().size() >= effectiveQuestionLimit) {
+            quiz.setIsCompleted(true);
+        }
+
         quizRepository.save(quiz);
 
         return questionDTOMapper.apply(question);
@@ -354,8 +361,28 @@ public class QuizServiceImplementation implements QuizService {
         quiz.setFinalScore(quiz.getFinalScore() + answerScore);
     }
 
+    @Override
+    public void submitQuiz(Long quizId) {
+        Optional<Quiz> existingQuiz = quizRepository.findById(quizId);
 
-    public QuizResult finishQuiz(Long quizId) {
+        Quiz quiz;
+        if(existingQuiz.isEmpty()) {
+            throw new ResourceNotFoundException("Quiz with "+quizId+" is not found");
+        } else {
+            quiz = existingQuiz.get();
+        }
+
+        if(!quiz.getIsCompleted()) {
+            throw new InvalidCredentialsException("Quiz is not completed");
+        }
+
+        quiz.setCompletedAt(LocalDateTime.now());
+
+        quizRepository.save(quiz);
+    }
+
+    @Override
+    public QuizResult getQuizResult(Long quizId) {
         Optional<Quiz> existingQuiz = quizRepository.findById(quizId);
 
         Quiz quiz;
@@ -419,6 +446,7 @@ public class QuizServiceImplementation implements QuizService {
                                                finalScore,
                                                finalPercentage,
                                                quiz.getCreatedAt(),
+                                               quiz.getCompletedAt(),
                                                questionsServedDTOs,
                                                userAnswerChoices,
                                                correctAnswerChoices,
@@ -428,10 +456,7 @@ public class QuizServiceImplementation implements QuizService {
         return quizResult;
     }
 
-
-
-
-
+}
 
 
 
@@ -549,7 +574,7 @@ public class QuizServiceImplementation implements QuizService {
     } */
 
 
-    //Without using database for choices
+//Without using database for choices
 
     /*private Question nextAdaptiveQuestion(Quiz quiz, AnswerResponse answerResponse, Question lastQuestion) {
 
@@ -605,6 +630,3 @@ public class QuizServiceImplementation implements QuizService {
 
 
     } */
-
-
-}

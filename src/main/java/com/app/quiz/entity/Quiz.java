@@ -51,6 +51,9 @@ public class Quiz {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
     @OrderColumn(name = "question_order")
     @ManyToMany
     @JoinTable(
