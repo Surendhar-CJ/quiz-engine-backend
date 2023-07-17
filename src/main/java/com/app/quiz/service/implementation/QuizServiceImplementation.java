@@ -438,6 +438,7 @@ public class QuizServiceImplementation implements QuizService {
         QuizResult quizResult = new QuizResult(quiz.getId(),
                                                userId,
                                                quiz.getTopic(),
+                                               quiz.getFeedbackType().getType(),
                                                quiz.getIsCompleted(),
                                                totalNoOfQuestions,
                                                quiz.getQuestionsLimit(),

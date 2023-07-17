@@ -17,6 +17,7 @@ public final class QuizResult {
         private Long quizId;
         private Long userId;
         private Topic topic;
+        private String feedbackType;
         private Boolean isQuizCompleted;
         private Integer noOfQuestions;
         private Integer questionsLimit;
