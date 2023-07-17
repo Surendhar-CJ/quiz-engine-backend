@@ -4,11 +4,13 @@ import com.app.quiz.entity.Choice;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 public final class FeedbackResponse {
     private String result;
-    private Choice correctAnswer;
+    private List<Choice> correctAnswer;
     private String explanation;
 
 }
