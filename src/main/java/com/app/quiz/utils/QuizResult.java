@@ -25,6 +25,7 @@ public final class QuizResult {
         private Double finalScore;
         private Double finalPercentage;
         private LocalDateTime createdAt;
+        private LocalDateTime completedAt;
         private List<QuestionDTO> questions;
         private Map<Long, List<Choice>> userAnswerChoices;
         private Map<Long, List<Choice>> correctAnswerChoices;

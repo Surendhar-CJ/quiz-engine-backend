@@ -53,13 +53,20 @@ public class QuizController {
 
     @PostMapping("/quizzes/submit-answer")
     public ResponseEntity<FeedbackResponse> getFeedback(@RequestBody AnswerResponse answerResponse) {
-            FeedbackResponse feedbackResponse = quizService.getFeedback(answerResponse);
-            return new ResponseEntity<>(feedbackResponse, HttpStatus.OK);
+        FeedbackResponse feedbackResponse = quizService.getFeedback(answerResponse);
+        return new ResponseEntity<>(feedbackResponse, HttpStatus.OK);
     }
 
-    @GetMapping("/quizzes/quiz-finish/{quizId}")
-    public ResponseEntity<QuizResult> finishQuiz(@PathVariable("quizId") Long quizId) {
-        QuizResult quizResult = quizService.finishQuiz(quizId);
+    @GetMapping("quizzes/submit-quiz/{quizId}")
+    public ResponseEntity<Void> submitQuiz(@PathVariable("quizId") Long quizId) {
+        quizService.submitQuiz(quizId);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+
+    @GetMapping("/quizzes/quiz-result/{quizId}")
+    public ResponseEntity<QuizResult> getQuizResult(@PathVariable("quizId") Long quizId) {
+        QuizResult quizResult = quizService.getQuizResult(quizId);
         return new ResponseEntity<>(quizResult, HttpStatus.OK);
     }
 
