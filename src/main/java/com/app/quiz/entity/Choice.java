@@ -34,4 +34,9 @@ public class Choice {
     @JoinColumn(name = "question_id")
     private Question question;
 
+    public Choice(String text, Boolean isCorrect) {
+        this.text = text;
+        this.isCorrect = isCorrect;
+    }
+
 }

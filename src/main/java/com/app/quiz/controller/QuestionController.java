@@ -1,6 +1,8 @@
 package com.app.quiz.controller;
 
+import com.app.quiz.dto.QuestionDTO;
 import com.app.quiz.entity.Question;
+import com.app.quiz.requestBody.QuestionAddition;
 import com.app.quiz.service.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,5 +26,13 @@ public class QuestionController {
     @GetMapping("/topics/{topicId}/questions")
     public ResponseEntity<List<Question>> getAllQuestions(@PathVariable("topicId") Long topicId) {
        return new ResponseEntity<>( questionService.getAllQuestionsByTopic(topicId), HttpStatus.OK);
+    }
+
+
+    @PostMapping("/questions")
+    public ResponseEntity<QuestionDTO> addQuestion(@RequestBody QuestionAddition questionAddition) {
+        System.out.println(questionAddition);
+        QuestionDTO question = questionService.addQuestion(questionAddition);
+        return new ResponseEntity<>(question, HttpStatus.CREATED);
     }
 }
