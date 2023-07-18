@@ -1,0 +1,18 @@
+package com.app.quiz.requestBody;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import java.util.List;
+import java.util.Map;
+
+@Data
+@AllArgsConstructor
+public class QuestionAddition {
+    private Long topicId;
+    private String questionType;
+    private String difficultyLevel;
+    private String questionText;
+    private Map<String, Boolean> choices;
+    private String explanation;
+    private Double score;
+}

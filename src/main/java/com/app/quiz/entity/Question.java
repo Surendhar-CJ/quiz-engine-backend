@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "question")
@@ -44,7 +43,7 @@ public class Question {
     @JoinColumn(name = "difficulty_level_id")
     private DifficultyLevel difficultyLevel;
 
-    @OneToMany(mappedBy = "question")
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL)
     private List<Choice> choices;
 
     public Question(String text, QuestionType type, Double score, Topic topic, DifficultyLevel difficultyLevel, List<Choice> choices) {
@@ -53,6 +52,10 @@ public class Question {
         this.score = score;
         this.topic = topic;
         this.difficultyLevel = difficultyLevel;
+        this.choices = new ArrayList<>();
+    }
+
+    public Question() {
         this.choices = new ArrayList<>();
     }
 
