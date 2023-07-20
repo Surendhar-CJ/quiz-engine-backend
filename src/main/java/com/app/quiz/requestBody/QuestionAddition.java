@@ -9,6 +9,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class QuestionAddition {
     private Long topicId;
+    private String subtopic;
     private String questionType;
     private String difficultyLevel;
     private String questionText;

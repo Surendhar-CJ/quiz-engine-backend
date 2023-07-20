@@ -1,10 +1,8 @@
 package com.app.quiz.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.util.ArrayList;
@@ -36,6 +34,10 @@ public class Question {
     private Topic topic;
 
     @ManyToOne
+    @JoinColumn(name = "subtopic_id")
+    private Subtopic subtopic;
+
+    @ManyToOne
     @JoinColumn(name = "question_type_id")
     private QuestionType type;
 
@@ -46,11 +48,12 @@ public class Question {
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL)
     private List<Choice> choices;
 
-    public Question(String text, QuestionType type, Double score, Topic topic, DifficultyLevel difficultyLevel, List<Choice> choices) {
+    public Question(String text, QuestionType type, Double score, Topic topic, Subtopic subtopic, DifficultyLevel difficultyLevel, List<Choice> choices) {
         this.text = text;
         this.type = type;
         this.score = score;
         this.topic = topic;
+        this.subtopic = subtopic;
         this.difficultyLevel = difficultyLevel;
         this.choices = new ArrayList<>();
     }
