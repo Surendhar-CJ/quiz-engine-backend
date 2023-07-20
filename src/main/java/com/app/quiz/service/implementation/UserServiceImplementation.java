@@ -160,7 +160,7 @@ public class UserServiceImplementation implements UserService {
         }
 
         if (!user.getPassword().matches(RegexPattern.PASSWORD_PATTERN)) {
-            throw new InvalidInputException("Password should be at least 8 characters (with at least a number and a symbol from !@#$%^&*)");
+            throw new InvalidInputException("Password - min. 8 characters, a number & a symbol ");
         }
 
         return user;
