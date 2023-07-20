@@ -435,6 +435,53 @@ public class QuizServiceImplementation implements QuizService {
         finalPercentage = Double.valueOf(df.format(finalPercentage));
 
 
+        Map<String, Double> marksScoredPerSubtopic = questionsServed.stream()
+                .collect(Collectors.groupingBy(
+                        question -> question.getSubtopic().getName(),  // Group by subtopic name
+                        Collectors.summingDouble(question -> {  // Sum the scores of answered questions
+                            List<Response> responses = quiz.getResponses();
+                            return responses.stream()
+                                    .filter(response -> response.getQuestion().equals(question))
+                                    .flatMap(response -> response.getChoices().stream())
+                                    .filter(choice -> choice.isCorrect())
+                                    .mapToDouble(choice -> question.getScore())  // Use the question's score here
+                                    .sum();
+                        })
+                ));
+
+// Calculate total marks per subtopic
+        Map<String, Double> totalMarksPerSubtopic = questionsServed.stream()
+                .collect(Collectors.groupingBy(
+                        question -> question.getSubtopic().getName(),  // Group by subtopic name
+                        Collectors.summingDouble(question -> question.getScore())  // Sum the scores of all questions
+                ));
+
+        Map<String, Double> percentageScorePerSubtopic = new HashMap<>();
+        for (String subtopic : marksScoredPerSubtopic.keySet()) {
+            double marksScored = marksScoredPerSubtopic.get(subtopic);
+            double totalMarks = totalMarksPerSubtopic.get(subtopic);
+            double percentageScore = (marksScored / totalMarks) * 100;
+            DecimalFormat dfo = new DecimalFormat("#.##");
+            percentageScore = Double.valueOf(dfo.format(percentageScore));
+            percentageScorePerSubtopic.put(subtopic, percentageScore);
+        }
+
+        // Start the feedback with the overall feedback
+        String overallFeedback = overallFeedback(finalPercentage);
+
+        String feedbackBySubTopic="";
+        // Then add feedback for each subtopic (excluding "General")
+        for (Map.Entry<String, Double> entry : percentageScorePerSubtopic.entrySet()) {
+            String subtopic = entry.getKey();
+            Double percentage = entry.getValue();
+
+            if (!subtopic.equals("General")) {  // Skip the "General" subtopic
+                feedbackBySubTopic += subtopicFeedback(percentage, subtopic)+" ";
+            }
+
+        }
+
+
         QuizResult quizResult = new QuizResult(quiz.getId(),
                                                userId,
                                                quiz.getTopic(),
@@ -446,16 +493,68 @@ public class QuizServiceImplementation implements QuizService {
                                                totalNumberOfMarks,
                                                finalScore,
                                                finalPercentage,
+                                               overallFeedback,
+                                               feedbackBySubTopic,
                                                quiz.getCreatedAt(),
                                                quiz.getCompletedAt(),
                                                questionsServedDTOs,
                                                userAnswerChoices,
                                                correctAnswerChoices,
-                                               answerExplanation
+                                               answerExplanation,
+                                               marksScoredPerSubtopic,
+                                               totalMarksPerSubtopic,
+                                               percentageScorePerSubtopic
                     );
 
         return quizResult;
     }
+
+
+
+    private String overallFeedback(Double percentage) {
+        if (percentage < 30) {
+            return "Consider this a valuable opportunity for learning. Your current score indicates areas for improvement. With additional study and practice, you will see progress.";
+        } else if (percentage < 60) {
+            return "A reasonable effort has been displayed. Your score reflects an understanding of the fundamental concepts. Continued study and practice will aid in further comprehension.";
+        } else if (percentage < 70) {
+            return "A commendable performance. Your score signifies a good grasp of the material. To further excel, consider deeper exploration of the topics.";
+        } else if (percentage < 90) {
+            return "Impressive results. Your solid understanding of the subjects is clearly demonstrated. Continue to challenge yourself for even greater knowledge attainment.";
+        } else if (percentage < 99) {
+            return "Excellent work. You are nearing mastery of this material. Despite the high score, remember that learning is an ongoing process, there are always opportunities for enhancement.";
+        } else if (percentage == 99) {
+            return "An exceptional result. You are on the brink of perfection. Continue this level of dedication for achieving complete mastery.";
+        } else if (percentage == 100) {
+            return "Congratulations on your perfect score. Your thorough understanding of the material is commendable. Maintain this momentum in your future learning endeavors.";
+        } else {
+            return "There appears to be an error with the score calculation. The score percentage falls outside of the expected range. Kindly verify the results.";
+        }
+    }
+
+
+
+    private String subtopicFeedback(Double percentage, String subtopic) {
+        if (percentage < 30) {
+            return "In regard to " + subtopic + ", the current understanding is in its initial stages. Further study and practice in this area are recommended.";
+        } else if (percentage < 60) {
+            return "In the subject of " + subtopic + ", the fundamentals are gradually being comprehended. Regular practice will reinforce this understanding.";
+        } else if (percentage < 70) {
+            return "The score in " + subtopic + " signifies a good understanding of the material. Continued review and practice would be beneficial.";
+        } else if (percentage < 90) {
+            return "For " + subtopic + ", your score exhibits a strong comprehension of the subject. Consistent study has proven effective.";
+        } else if (percentage < 99) {
+            return "In " + subtopic + ", the mastery level is nearly reached. Maintain the same dedication to reach perfection.";
+        } else if (percentage >= 99) {
+            return "In " + subtopic + ", you're showcasing exceptional understanding. Your diligence is paying off. Continue in this fashion.";
+        } else if (percentage == 100) {
+            return "In " + subtopic + ", you have achieved perfection. Your thorough understanding is commendable. Maintain this level of excellence.";
+        } else {
+            return "An error has occurred as the score percentage falls outside of the expected range. Please verify the results.";
+        }
+    }
+
+
+
 
 }
 
@@ -463,42 +562,15 @@ public class QuizServiceImplementation implements QuizService {
 
 
 
-  /*  private Question nextDifficultyBasedQuestion(Quiz quiz, AnswerResponse answerResponse, Question lastQuestion) {
-
-        // Check if last question was answered correctly
-        List<Choice> answerChoices = answerResponse.getAnswerChoices();
-
-        // Convert the last question's choices to a set for faster lookups
-        Set<Choice> lastQuestionChoices = new HashSet<>(lastQuestion.getChoices());
-
-        for(Choice choice : answerChoices) {
-            Optional<Choice> databaseChoiceOptional = choiceRepository.findById((choice.getId()));
-            if (databaseChoiceOptional.isEmpty()) {
-                throw new ResourceNotFoundException("Choice with id " + choice.getId() + " is not found");
-            } else {
-                Choice databaseChoice = databaseChoiceOptional.get();
-                // Check if the choice is valid for the last question
-                if (!lastQuestionChoices.contains(databaseChoice)) {
-                    throw new InvalidInputException("Invalid choice id for the given question");
-                }
-            }
-        }
 
 
-        Topic topic = quiz.getTopic();
-        List<Question> servedQuestions = quiz.getServedQuestions();
-        List<Question> questionsList = topic.getQuestionsList();
-        Question nextQuestion = questionsList.stream()
-                .filter(question -> question.getDifficultyLevel().equals(quiz.difficultyLevel))
-                .filter(question -> !servedQuestions.contains(question))
-                .findAny()
-                .orElseThrow(() -> new ResourceNotFoundException("No more questions available"));
 
-        return nextQuestion;
 
-    }
 
-    private String getNextDifficultyLevel(String currentDifficulty) {
+
+
+
+/*   private String getNextDifficultyLevel(String currentDifficulty) {
         switch (currentDifficulty.toLowerCase()) {
             case "easy":
                 return "medium";

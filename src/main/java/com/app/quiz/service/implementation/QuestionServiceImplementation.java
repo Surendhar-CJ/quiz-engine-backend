@@ -4,10 +4,7 @@ import com.app.quiz.dto.QuestionDTO;
 import com.app.quiz.dto.mapper.QuestionDTOMapper;
 import com.app.quiz.entity.*;
 import com.app.quiz.exception.custom.ResourceNotFoundException;
-import com.app.quiz.repository.DifficultyLevelRepository;
-import com.app.quiz.repository.QuestionRepository;
-import com.app.quiz.repository.QuestionTypeRepository;
-import com.app.quiz.repository.TopicRepository;
+import com.app.quiz.repository.*;
 import com.app.quiz.requestBody.QuestionAddition;
 import com.app.quiz.service.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,14 +21,16 @@ public class QuestionServiceImplementation implements QuestionService {
     private final TopicRepository topicRepository;
     private final DifficultyLevelRepository difficultyLevelRepository;
     private final QuestionTypeRepository questionTypeRepository;
+    private final SubtopicRepository subtopicRepository;
     private final QuestionDTOMapper questionDTOMapper;
 
     @Autowired
-    public QuestionServiceImplementation(QuestionRepository questionRepository, TopicRepository topicRepository, DifficultyLevelRepository difficultyLevelRepository, QuestionTypeRepository questionTypeRepository, QuestionDTOMapper questionDTOMapper) {
+    public QuestionServiceImplementation(QuestionRepository questionRepository, TopicRepository topicRepository, DifficultyLevelRepository difficultyLevelRepository, SubtopicRepository subtopicRepository, QuestionTypeRepository questionTypeRepository, QuestionDTOMapper questionDTOMapper) {
         this.questionRepository = questionRepository;
         this.topicRepository = topicRepository;
         this.difficultyLevelRepository = difficultyLevelRepository;
         this.questionTypeRepository = questionTypeRepository;
+        this.subtopicRepository = subtopicRepository;
         this.questionDTOMapper =  questionDTOMapper;
     }
 
@@ -84,7 +83,19 @@ public class QuestionServiceImplementation implements QuestionService {
         newQuestion.setScore(questionAddition.getScore());
         newQuestion.setType(questionType);
         newQuestion.setDifficultyLevel(difficultyLevel);
-        newQuestion.setTopic(topic);
+        if (questionAddition.getSubtopic() == null || questionAddition.getSubtopic().equals("")) {
+            Subtopic subtopic = subtopicRepository.findByNameAndTopic("General", topic);
+
+            // If a "General" Subtopic doesn't exist for the given Topic, create one.
+            if (subtopic == null) {
+                subtopic = new Subtopic();
+                subtopic.setName("General");
+                subtopic.setTopic(topic);
+                subtopic = subtopicRepository.save(subtopic);
+            }
+
+            newQuestion.setSubtopic(subtopic);
+        }
         newQuestion.setExplanation(questionAddition.getExplanation());
 
         // If question type is True or False, only two choices should be available
