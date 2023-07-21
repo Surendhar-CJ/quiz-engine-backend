@@ -4,6 +4,7 @@ package com.app.quiz.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @NoArgsConstructor
@@ -20,6 +21,7 @@ public class Subtopic {
     private String name;
 
     @ManyToOne
+    @ToString.Exclude
     @JoinColumn(name = "topic_id")
     private Topic topic;
 
