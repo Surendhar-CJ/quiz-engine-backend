@@ -86,6 +86,8 @@ public class QuestionServiceImplementation implements QuestionService {
 
         Question newQuestion = new Question();
 
+        newQuestion.setTopic(topic);
+
         if(questionAddition.getQuestionText() == null || questionAddition.getQuestionText().equals("")) {
             throw new InvalidInputException("Question cannot be empty");
         }
