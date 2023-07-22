@@ -156,18 +156,6 @@ public class QuizServiceImplementation implements QuizService {
 
         return questionDTOMapper.apply(question);
 
-
-        /* //This is for adaptive quizzing
-        *
-        * for(Question q : questions) {
-            if(q.getDifficultyLevel().getLevel().equalsIgnoreCase("Easy")) {
-                quiz.getServedQuestions().add(q);
-                quizRepository.save(quiz);
-                return q;
-            }
-        }
-
-        throw new ResourceNotFoundException("No easy questions available"); */
     }
 
     @Override
@@ -213,7 +201,16 @@ public class QuizServiceImplementation implements QuizService {
         }
 
         // Now check if all questions have been served, and if so, mark the quiz as completed
-        Integer effectiveQuestionLimit = quiz.getQuestionsLimit() != null ? quiz.getQuestionsLimit() : quiz.getTopic().getQuestionsList().size();
+        Integer effectiveQuestionLimit = quiz.getQuestionsLimit();
+        if (quiz.getDifficultyLevel() != null) {
+            long questionsOfDifficulty = quiz.getTopic().getQuestionsList().stream()
+                    .filter(q -> q.getDifficultyLevel().equals(quiz.getDifficultyLevel()))
+                    .count();
+            effectiveQuestionLimit = effectiveQuestionLimit != null ? Math.min(effectiveQuestionLimit, (int)questionsOfDifficulty) : (int)questionsOfDifficulty;
+        } else {
+            effectiveQuestionLimit = effectiveQuestionLimit != null ? effectiveQuestionLimit : quiz.getTopic().getQuestionsList().size();
+        }
+
         if (quiz.getServedQuestions().size() >= effectiveQuestionLimit) {
             quiz.setIsCompleted(true);
         }
@@ -223,6 +220,7 @@ public class QuizServiceImplementation implements QuizService {
         QuestionDTO questionDTO = questionDTOMapper.apply(nextQuestion);
 
         return questionDTO;
+
     }
 
     @Override
