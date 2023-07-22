@@ -92,19 +92,23 @@ public class QuestionServiceImplementation implements QuestionService {
         newQuestion.setText(questionAddition.getQuestionText());
 
 
-        if(questionAddition.getScore() == null || questionAddition.getScore().equals("")) {
+        Double score = questionAddition.getScore();
+        if(score == null) {
             switch (difficultyLevel.getLevel().toLowerCase()) {
                 case "easy":
                     newQuestion.setScore(1.0);
                     break;
                 case "medium":
                     newQuestion.setScore(2.0);
+                    break;
                 case "hard":
                     newQuestion.setScore(3.0);
+                    break;
             }
         } else {
-            newQuestion.setScore(questionAddition.getScore());
+            newQuestion.setScore(score);
         }
+
 
         newQuestion.setType(questionType);
 
