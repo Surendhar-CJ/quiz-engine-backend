@@ -86,13 +86,13 @@ public class QuestionServiceImplementation implements QuestionService {
 
         Question newQuestion = new Question();
 
-        if(questionAddition.getQuestionText().equals("") || questionAddition.getQuestionText() == null) {
+        if(questionAddition.getQuestionText() == null || questionAddition.getQuestionText().equals("")) {
             throw new InvalidInputException("Question cannot be empty");
         }
         newQuestion.setText(questionAddition.getQuestionText());
 
 
-        if(questionAddition.getScore().equals("") || questionAddition.getScore() == null) {
+        if(questionAddition.getScore() == null || questionAddition.getScore().equals("")) {
             switch (difficultyLevel.getLevel().toLowerCase()) {
                 case "easy":
                     newQuestion.setScore(1.0);
