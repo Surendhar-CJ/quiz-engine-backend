@@ -4,10 +4,11 @@ import com.app.quiz.dto.UserDTO;
 import com.app.quiz.dto.UserQuizDTO;
 import com.app.quiz.entity.User;
 import com.app.quiz.requestBody.UserLogin;
+import com.app.quiz.requestBody.UserSignUp;
 
 public interface UserService {
 
-    UserDTO createUser(User user);
+    UserDTO createUser(UserSignUp userSignUp);
 
     UserQuizDTO getUserById(Long id);
 
