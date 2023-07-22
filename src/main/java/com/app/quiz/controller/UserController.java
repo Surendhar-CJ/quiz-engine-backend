@@ -6,6 +6,7 @@ import com.app.quiz.dto.UserDTO;
 import com.app.quiz.dto.UserQuizDTO;
 import com.app.quiz.entity.User;
 import com.app.quiz.requestBody.UserLogin;
+import com.app.quiz.requestBody.UserSignUp;
 import com.app.quiz.service.UserService;
 import com.app.quiz.utils.UserResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,8 +32,8 @@ public class UserController {
     }
 
     @PostMapping("/users")
-    public ResponseEntity<UserDTO> createUser(@RequestBody User user) {
-        UserDTO createdUser = userService.createUser(user);
+    public ResponseEntity<UserDTO> createUser(@RequestBody UserSignUp userSignUp) {
+        UserDTO createdUser = userService.createUser(userSignUp);
         return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
     }
 

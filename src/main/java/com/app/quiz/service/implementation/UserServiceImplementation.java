@@ -15,6 +15,7 @@ import com.app.quiz.repository.QuizRepository;
 import com.app.quiz.repository.TopicRepository;
 import com.app.quiz.repository.UserRepository;
 import com.app.quiz.requestBody.UserLogin;
+import com.app.quiz.requestBody.UserSignUp;
 import com.app.quiz.service.UserService;
 import com.app.quiz.utils.QuizResult;
 import com.app.quiz.utils.RegexPattern;
@@ -42,10 +43,10 @@ public class UserServiceImplementation implements UserService {
     }
 
     @Override
-    public UserDTO createUser(User user) {
-        User validatedUser = validateUser(user);
+    public UserDTO createUser(UserSignUp userSignUp) {
+        User validatedUser = validateUser(userSignUp);
 
-        validatedUser.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+        validatedUser.setPassword(bCryptPasswordEncoder.encode(validatedUser.getPassword()));
         userRepository.save(validatedUser);
 
         return userDTOMapper.apply(validatedUser);
@@ -137,7 +138,9 @@ public class UserServiceImplementation implements UserService {
 
 
 
-    private User validateUser(User user) {
+    private User validateUser(UserSignUp userSignUp) {
+
+        User user = new User(userSignUp.getFirstName(), userSignUp.getLastName(), userSignUp.getEmail(), userSignUp.getPassword());
 
         if(user.getFirstName().isEmpty()) {
             throw new InvalidInputException("Username cannot be empty");
@@ -161,6 +164,10 @@ public class UserServiceImplementation implements UserService {
 
         if (!user.getPassword().matches(RegexPattern.PASSWORD_PATTERN)) {
             throw new InvalidInputException("Password - min. 8 characters, a number & a symbol ");
+        }
+
+        if(!user.getPassword().matches(userSignUp.getPassword())) {
+            throw new InvalidInputException("Passwords do not match");
         }
 
         return user;
