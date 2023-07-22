@@ -3,6 +3,7 @@ package com.app.quiz.service.implementation;
 import com.app.quiz.dto.QuestionDTO;
 import com.app.quiz.dto.mapper.QuestionDTOMapper;
 import com.app.quiz.entity.*;
+import com.app.quiz.exception.custom.InvalidInputException;
 import com.app.quiz.exception.custom.ResourceNotFoundException;
 import com.app.quiz.repository.*;
 import com.app.quiz.requestBody.QuestionAddition;
@@ -51,6 +52,11 @@ public class QuestionServiceImplementation implements QuestionService {
 
     @Override
     public QuestionDTO addQuestion(QuestionAddition questionAddition) {
+
+        if(questionAddition.getTopicId() == null) {
+            throw new InvalidInputException("Topic id cannot be null");
+        }
+
         Optional<Topic> existingTopic = topicRepository.findById(questionAddition.getTopicId());
 
         Topic topic;
@@ -79,10 +85,31 @@ public class QuestionServiceImplementation implements QuestionService {
         }
 
         Question newQuestion = new Question();
+
+        if(questionAddition.getQuestionText().equals("") || questionAddition.getQuestionText() == null) {
+            throw new InvalidInputException("Question cannot be empty");
+        }
         newQuestion.setText(questionAddition.getQuestionText());
-        newQuestion.setScore(questionAddition.getScore());
+
+
+        if(questionAddition.getScore().equals("") || questionAddition.getScore() == null) {
+            switch (difficultyLevel.getLevel().toLowerCase()) {
+                case "easy":
+                    newQuestion.setScore(1.0);
+                    break;
+                case "medium":
+                    newQuestion.setScore(2.0);
+                case "hard":
+                    newQuestion.setScore(3.0);
+            }
+        } else {
+            newQuestion.setScore(questionAddition.getScore());
+        }
+
         newQuestion.setType(questionType);
+
         newQuestion.setDifficultyLevel(difficultyLevel);
+
         if (questionAddition.getSubtopic() == null || questionAddition.getSubtopic().equals("")) {
             Subtopic subtopic = subtopicRepository.findByNameAndTopic("General", topic);
 
@@ -96,11 +123,16 @@ public class QuestionServiceImplementation implements QuestionService {
 
             newQuestion.setSubtopic(subtopic);
         }
+
+
+        if(questionAddition.getExplanation().equals("") || questionAddition.getExplanation() == null) {
+            throw new InvalidInputException("Answer explanation cannot be empty");
+        }
         newQuestion.setExplanation(questionAddition.getExplanation());
 
         // If question type is True or False, only two choices should be available
         if(questionType.getType().equalsIgnoreCase("True or False") && questionAddition.getChoices().size() != 2) {
-            throw new IllegalArgumentException("True or False questions must have exactly two choices");
+            throw new InvalidInputException("True or False questions must have exactly two choices");
         }
 
         int correctAnswerCount = 0;
@@ -114,11 +146,11 @@ public class QuestionServiceImplementation implements QuestionService {
         }
 
         if(questionType.getType().equalsIgnoreCase("Multiple Choice") && correctAnswerCount != 1) {
-            throw new IllegalArgumentException("Multiple Choice Questions must have exactly one correct answer");
+            throw new InvalidInputException("Multiple Choice Questions must have exactly one correct answer");
         }
 
         if(questionType.getType().equalsIgnoreCase("Multiple Answer") && correctAnswerCount < 2) {
-            throw new IllegalArgumentException("Multiple Answer Questions must have at least two correct answers");
+            throw new InvalidInputException("Multiple Answer Questions must have at least two correct answers");
         }
 
         Question question = questionRepository.save(newQuestion);
