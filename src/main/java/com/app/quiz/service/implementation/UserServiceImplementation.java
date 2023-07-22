@@ -166,7 +166,7 @@ public class UserServiceImplementation implements UserService {
             throw new InvalidInputException("Password - min. 8 characters, a number & a symbol ");
         }
 
-        if(!user.getPassword().matches(userSignUp.getPassword())) {
+        if(!user.getPassword().matches(userSignUp.getConfirmPassword())) {
             throw new InvalidInputException("Passwords do not match");
         }
 
