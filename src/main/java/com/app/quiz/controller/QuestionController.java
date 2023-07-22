@@ -31,7 +31,6 @@ public class QuestionController {
 
     @PostMapping("/questions")
     public ResponseEntity<QuestionDTO> addQuestion(@RequestBody QuestionAddition questionAddition) {
-        System.out.println(questionAddition);
         QuestionDTO question = questionService.addQuestion(questionAddition);
         return new ResponseEntity<>(question, HttpStatus.CREATED);
     }
