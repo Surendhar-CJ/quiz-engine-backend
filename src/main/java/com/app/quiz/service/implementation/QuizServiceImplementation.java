@@ -247,7 +247,7 @@ public class QuizServiceImplementation implements QuizService {
         answerValidation(answerResponse, receivedQuestion);
 
         FeedbackResponse feedbackResponse;
-        if(quiz.getFeedbackType().getType().equalsIgnoreCase("DELAYED_ELABORATED")) {
+        if(quiz.getFeedbackType().getType().equalsIgnoreCase("DELAYED ELABORATED")) {
             feedbackResponse = null;
         }
         else {
