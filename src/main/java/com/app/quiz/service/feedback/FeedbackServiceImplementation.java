@@ -48,11 +48,11 @@ public  class FeedbackServiceImplementation implements FeedbackService {
 
         String feedbackType = quiz.getFeedbackType().getType();
 
-        if ("Immediate_Response".equalsIgnoreCase(feedbackType)) {
+        if ("Immediate Response".equalsIgnoreCase(feedbackType)) {
             feedbackResponse = immediateResponse(question, numberOfCorrectAnswerChoices);
-        } else if ("Immediate_Correct_Answer_Response".equalsIgnoreCase(feedbackType)) {
+        } else if ("Immediate Correct Answer Response".equalsIgnoreCase(feedbackType)) {
             feedbackResponse = immediateCorrectAnswerResponse(question, numberOfCorrectAnswerChoices);
-        } else if ("Immediate_Elaborated".equalsIgnoreCase(feedbackType)) {
+        } else if ("Immediate Elaborated".equalsIgnoreCase(feedbackType)) {
             feedbackResponse = immediateElaborated(question, numberOfCorrectAnswerChoices);
         }
 
