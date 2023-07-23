@@ -31,6 +31,7 @@ public class QuizServiceImplementation implements QuizService {
     private final TopicRepository topicRepository;
     private final QuestionRepository questionRepository;
     private final FeedbackRepository feedbackRepository;
+    private final FeedbackContentRepository feedbackContentRepository;
     private final ResponseRepository responseRepository;
     private final DifficultyLevelRepository difficultyLevelRepository;
     private final QuizDTOMapper quizDTOMapper;
@@ -43,6 +44,7 @@ public class QuizServiceImplementation implements QuizService {
                                      TopicRepository topicRepository,
                                      QuestionRepository questionRepository,
                                      FeedbackRepository feedbackRepository,
+                                     FeedbackContentRepository feedbackContentRepository,
                                      ResponseRepository responseRepository,
                                      DifficultyLevelRepository difficultyLevelRepository,
                                      QuizDTOMapper quizDTOMapper,
@@ -54,6 +56,7 @@ public class QuizServiceImplementation implements QuizService {
                                     this.topicRepository = topicRepository;
                                     this.questionRepository = questionRepository;
                                     this.feedbackRepository = feedbackRepository;
+                                    this.feedbackContentRepository = feedbackContentRepository;
                                     this.responseRepository = responseRepository;
                                     this.difficultyLevelRepository = difficultyLevelRepository;
                                     this.quizDTOMapper = quizDTOMapper;
@@ -465,7 +468,7 @@ public class QuizServiceImplementation implements QuizService {
         }
 
         // Start the feedback with the overall feedback
-        String overallFeedback = overallFeedback(finalPercentage);
+        String overallFeedback = feedbackService.overallFeedback(finalPercentage);
 
         String feedbackBySubTopic="";
         // Then add feedback for each subtopic (excluding "General")
@@ -474,7 +477,7 @@ public class QuizServiceImplementation implements QuizService {
             Double percentage = entry.getValue();
 
             if (!subtopic.equals("General")) {  // Skip the "General" subtopic
-                feedbackBySubTopic += subtopicFeedback(percentage, subtopic)+" ";
+                feedbackBySubTopic += feedbackService.subtopicFeedback(percentage, subtopic)+" ";
             }
 
         }
@@ -509,47 +512,7 @@ public class QuizServiceImplementation implements QuizService {
 
 
 
-    private String overallFeedback(Double percentage) {
-        if (percentage < 30) {
-            return "Consider this a valuable opportunity for learning. Your current score indicates areas for improvement. With additional study and practice, you will see progress.";
-        } else if (percentage < 60) {
-            return "A reasonable effort has been displayed. Your score reflects an understanding of the fundamental concepts. Continued study and practice will aid in further comprehension.";
-        } else if (percentage < 70) {
-            return "A commendable performance. Your score signifies a good grasp of the material. To further excel, consider deeper exploration of the topics.";
-        } else if (percentage < 90) {
-            return "Impressive results. Your solid understanding of the subjects is clearly demonstrated. Continue to challenge yourself for even greater knowledge attainment.";
-        } else if (percentage < 99) {
-            return "Excellent work. You are nearing mastery of this material. Despite the high score, remember that learning is an ongoing process, there are always opportunities for enhancement.";
-        } else if (percentage == 99) {
-            return "An exceptional result. You are on the brink of perfection. Continue this level of dedication for achieving complete mastery.";
-        } else if (percentage == 100) {
-            return "Congratulations on your perfect score. Your thorough understanding of the material is commendable. Maintain this momentum in your future learning endeavors.";
-        } else {
-            return "There appears to be an error with the score calculation. The score percentage falls outside of the expected range. Kindly verify the results.";
-        }
-    }
 
-
-
-    private String subtopicFeedback(Double percentage, String subtopic) {
-        if (percentage < 30) {
-            return "In regard to " + subtopic + ", the current understanding is in its initial stages. Further study and practice in this area are recommended.";
-        } else if (percentage < 60) {
-            return "In the subject of " + subtopic + ", the fundamentals are gradually being comprehended. Regular practice will reinforce this understanding.";
-        } else if (percentage < 70) {
-            return "The score in " + subtopic + " signifies a good understanding of the material. Continued review and practice would be beneficial.";
-        } else if (percentage < 90) {
-            return "For " + subtopic + ", your score exhibits a strong comprehension of the subject. Consistent study has proven effective.";
-        } else if (percentage < 99) {
-            return "In " + subtopic + ", the mastery level is nearly reached. Maintain the same dedication to reach perfection.";
-        } else if (percentage >= 99) {
-            return "In " + subtopic + ", you're showcasing exceptional understanding. Your diligence is paying off. Continue in this fashion.";
-        } else if (percentage == 100) {
-            return "In " + subtopic + ", you have achieved perfection. Your thorough understanding is commendable. Maintain this level of excellence.";
-        } else {
-            return "An error has occurred as the score percentage falls outside of the expected range. Please verify the results.";
-        }
-    }
 
 
 
