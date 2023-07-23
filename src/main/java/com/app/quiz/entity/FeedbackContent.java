@@ -17,10 +17,10 @@ public class FeedbackContent {
     private Long id;
 
     @Column(name = "min_score")
-    private int minScore;
+    private Double minScore;
 
     @Column(name = "max_score")
-    private int maxScore;
+    private Double maxScore;
 
     @Column(name = "overall_feedback")
     private String overallFeedback;
