@@ -1,10 +1,8 @@
 package com.app.quiz.service.feedback;
 
 
-import com.app.quiz.entity.Choice;
-import com.app.quiz.entity.Feedback;
-import com.app.quiz.entity.Question;
-import com.app.quiz.entity.Quiz;
+import com.app.quiz.entity.*;
+import com.app.quiz.repository.FeedbackContentRepository;
 import com.app.quiz.repository.FeedbackRepository;
 import com.app.quiz.requestBody.AnswerResponse;
 import com.app.quiz.utils.FeedbackResponse;
@@ -16,13 +14,14 @@ import java.util.stream.Collectors;
 
 @Service
 public  class FeedbackServiceImplementation implements FeedbackService {
-    private final FeedbackConfiguration feedbackConfig;
     private final FeedbackRepository feedbackRepository;
 
+    private final FeedbackContentRepository feedbackContentRepository;
+
     @Autowired
-    public FeedbackServiceImplementation(FeedbackConfiguration feedbackConfig, FeedbackRepository feedbackRepository) {
-        this.feedbackConfig = feedbackConfig;
+    public FeedbackServiceImplementation(FeedbackRepository feedbackRepository, FeedbackContentRepository feedbackContentRepository) {
         this.feedbackRepository = feedbackRepository;
+        this.feedbackContentRepository = feedbackContentRepository;
     }
 
     // This method is shared among all feedback types.
@@ -166,6 +165,25 @@ public  class FeedbackServiceImplementation implements FeedbackService {
     @Override
     public List<Feedback> getFeedbackTypes() {
         return feedbackRepository.findAll();
+    }
+
+
+    @Override
+    public String overallFeedback(Double percentage) {
+        FeedbackContent feedback = feedbackContentRepository.findTopByMinScoreLessThanEqualAndMaxScoreGreaterThanEqual(percentage, percentage);
+        if(feedback != null) {
+            return feedback.getOverallFeedback();
+        }
+        return "There appears to be an error with the score calculation. The score percentage falls outside of the expected range. Kindly verify the results.";
+    }
+
+    @Override
+    public String subtopicFeedback(Double percentage, String subtopic) {
+        FeedbackContent feedback = feedbackContentRepository.findTopByMinScoreLessThanEqualAndMaxScoreGreaterThanEqual(percentage, percentage);
+        if(feedback != null) {
+            return feedback.getSubtopicFeedback().replace("{subtopic}", subtopic);
+        }
+        return "An error has occurred as the score percentage falls outside of the expected range. Please verify the results.";
     }
 
 }

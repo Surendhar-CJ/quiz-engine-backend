@@ -13,4 +13,8 @@ public interface  FeedbackService {
     List<Feedback> getFeedbackTypes();
 
     FeedbackResponse generateFeedback(Quiz quiz, Question question, AnswerResponse answerResponse);
+
+    String overallFeedback(Double percentage);
+
+    String subtopicFeedback(Double percentage, String subtopic);
 }
