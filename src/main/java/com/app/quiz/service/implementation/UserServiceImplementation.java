@@ -2,7 +2,6 @@ package com.app.quiz.service.implementation;
 
 import com.app.quiz.dto.UserDTO;
 import com.app.quiz.dto.UserQuizDTO;
-import com.app.quiz.dto.mapper.QuizDTOMapper;
 import com.app.quiz.dto.mapper.UserDTOMapper;
 import com.app.quiz.entity.Question;
 import com.app.quiz.entity.Quiz;
@@ -12,7 +11,6 @@ import com.app.quiz.exception.custom.InvalidInputException;
 import com.app.quiz.exception.custom.ResourceExistsException;
 import com.app.quiz.exception.custom.ResourceNotFoundException;
 import com.app.quiz.repository.QuizRepository;
-import com.app.quiz.repository.TopicRepository;
 import com.app.quiz.repository.UserRepository;
 import com.app.quiz.requestBody.UserLogin;
 import com.app.quiz.requestBody.UserSignUp;
@@ -32,13 +30,15 @@ public class UserServiceImplementation implements UserService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final UserDTOMapper userDTOMapper;
+    private final QuizRepository quizRepository;
     private final QuizServiceImplementation quizServiceImplementation;
     @Autowired
-    public UserServiceImplementation(UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder, UserDTOMapper userDTOMapper, QuizServiceImplementation quizServiceImplementation) {
+    public UserServiceImplementation(UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder, UserDTOMapper userDTOMapper, QuizServiceImplementation quizServiceImplementation, QuizRepository quizRepository) {
         this.userRepository = userRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.userDTOMapper = userDTOMapper;
         this.quizServiceImplementation = quizServiceImplementation;
+        this.quizRepository = quizRepository;
 
     }
 
@@ -70,6 +70,7 @@ public class UserServiceImplementation implements UserService {
                 .toList();
 
         Map<Long, Double> averageScoreByTopic = averagePercentageByTopic(user);
+        Map<Long, Double> averageScoreByOtherUsersPerTopic = averagePercentageByOtherUsersPerTopic(user.getId());
 
         return new UserQuizDTO(
                 user.getId(),
@@ -77,7 +78,8 @@ public class UserServiceImplementation implements UserService {
                 user.getLastName(),
                 user.getEmail(),
                 userQuizzes,
-                averageScoreByTopic
+                averageScoreByTopic,
+                averageScoreByOtherUsersPerTopic
         );
     }
 
@@ -135,6 +137,47 @@ public class UserServiceImplementation implements UserService {
 
         return averagePercentageByTopic;
     }
+
+    private Map<Long, Double> averagePercentageByOtherUsersPerTopic(Long currentUserId) {
+        List<Quiz> allQuizzes = quizRepository.findByUserIdNot(currentUserId);
+
+        Map<Long, Double> sumPercentageByTopic = new HashMap<>();
+        Map<Long, Integer> countByTopic = new HashMap<>();
+
+        DecimalFormat df = new DecimalFormat("#.##");
+
+        for (Quiz quiz : allQuizzes) {
+            if (!quiz.getIsCompleted()) {
+                continue;
+            } else {
+                Long topicId = quiz.getTopic().getId();
+
+                // Calculate the percentage for the current quiz
+                Double totalScore = quiz.getServedQuestions().stream()
+                        .mapToDouble(Question::getScore)
+                        .sum();
+                Double finalScore = quiz.getFinalScore();
+                double quizPercentage = ((double) finalScore / totalScore) * 100;
+                quizPercentage = Double.valueOf(df.format(quizPercentage));
+
+                // Update the sum and count for the current topic
+                sumPercentageByTopic.put(topicId, sumPercentageByTopic.getOrDefault(topicId, 0.0) + quizPercentage);
+                countByTopic.put(topicId, countByTopic.getOrDefault(topicId, 0) + 1);
+            }
+        }
+
+        // Calculate the average percentage for each topic
+        Map<Long, Double> averagePercentageByTopic = new HashMap<>();
+        for (Long topicId : sumPercentageByTopic.keySet()) {
+            double averagePercentage = sumPercentageByTopic.get(topicId) / countByTopic.get(topicId);
+            averagePercentageByTopic.put(topicId, Double.valueOf(df.format(averagePercentage)));
+        }
+
+        return averagePercentageByTopic;
+    }
+
+
+
 
 
 

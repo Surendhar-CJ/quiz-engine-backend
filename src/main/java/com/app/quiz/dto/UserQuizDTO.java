@@ -11,7 +11,8 @@ public record UserQuizDTO (
     String lastName,
     String email,
     List<QuizResult> quizList,
-    Map<Long, Double> averageScoreByTopic
+    Map<Long, Double> averageScoreByTopic,
+    Map<Long, Double> averagePercentageByOtherUsersPerTopic
 )
 
 {}
