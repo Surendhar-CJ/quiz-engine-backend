@@ -393,8 +393,8 @@ public class QuizServiceImplementation implements QuizService {
             quiz = existingQuiz.get();
         }
 
-        if(!quiz.getIsCompleted()) {
-            throw new InvalidCredentialsException("Quiz is not completed");
+        if(!quiz.getIsCompleted() || quiz.getCompletedAt() == null) {
+            throw new InvalidInputException("Quiz is not completed");
         }
 
         Long userId = quiz.getUser().getId();

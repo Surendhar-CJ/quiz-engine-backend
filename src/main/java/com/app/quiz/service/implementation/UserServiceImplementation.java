@@ -109,7 +109,7 @@ public class UserServiceImplementation implements UserService {
         DecimalFormat df = new DecimalFormat("#.##");
 
         for (Quiz quiz : quizList) {
-            if (!quiz.getIsCompleted()) {
+            if (!quiz.getIsCompleted() || quiz.getCompletedAt() == null) {
                 continue;
             } else {
                 Long topicId = quiz.getTopic().getId();
@@ -147,7 +147,7 @@ public class UserServiceImplementation implements UserService {
         DecimalFormat df = new DecimalFormat("#.##");
 
         for (Quiz quiz : allQuizzes) {
-            if (!quiz.getIsCompleted()) {
+            if (!quiz.getIsCompleted() || quiz.getCompletedAt() == null) {
                 continue;
             } else {
                 Long topicId = quiz.getTopic().getId();
