@@ -65,7 +65,7 @@ public class UserServiceImplementation implements UserService {
         }
 
         List<QuizResult> userQuizzes = user.getQuizList().stream()
-                .filter(quiz -> quiz.getIsCompleted() && quiz.getCompletedAt() != null)
+                .filter(quiz -> quiz.getIsCompleted())
                 .map(quiz -> quizServiceImplementation.getQuizResult(quiz.getId()))
                 .toList();
 

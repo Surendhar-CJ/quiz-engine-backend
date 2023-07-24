@@ -394,7 +394,6 @@ public class QuizServiceImplementation implements QuizService {
         }
 
         if(!quiz.getIsCompleted() || quiz.getCompletedAt() == null) {
-            System.out.println(quiz);
             throw new InvalidInputException("Quiz is not completed");
         }
 
