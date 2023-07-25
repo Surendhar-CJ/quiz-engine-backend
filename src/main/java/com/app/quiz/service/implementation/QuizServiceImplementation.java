@@ -158,7 +158,6 @@ public class QuizServiceImplementation implements QuizService {
         quizRepository.save(quiz);
 
         return questionDTOMapper.apply(question);
-
     }
 
     @Override
@@ -226,6 +225,46 @@ public class QuizServiceImplementation implements QuizService {
 
     }
 
+
+    //For Regular quiz
+    private Question nextRegularQuestion(Quiz quiz) {
+        Integer effectiveQuestionLimit = quiz.getQuestionsLimit() != null ? quiz.getQuestionsLimit() : quiz.getTopic().getQuestionsList().size();
+        if (quiz.getServedQuestions().size() >= effectiveQuestionLimit) {
+            throw new ResourceNotFoundException("Questions limit reached");
+        }
+        Topic topic = quiz.getTopic();
+        List<Question> servedQuestions = quiz.getServedQuestions();
+        List<Question> questionsList = topic.getQuestionsList();
+        List<Question> remainingQuestions;
+
+        // If a difficulty level is specified, only get questions with the matching difficulty level
+        if(quiz.getDifficultyLevel() != null) {
+            remainingQuestions = questionsList.stream()
+                    .filter(question -> !servedQuestions.contains(question))
+                    .filter(question -> question.getDifficultyLevel().getLevel().equalsIgnoreCase(quiz.getDifficultyLevel().getLevel()))
+                    .collect(Collectors.toList());
+
+            if (remainingQuestions.isEmpty()) {
+                throw new ResourceNotFoundException("No more questions available for the specified difficulty level");
+            }
+        } else {
+            remainingQuestions = questionsList.stream()
+                    .filter(question -> !servedQuestions.contains(question))
+                    .collect(Collectors.toList());
+
+            if (remainingQuestions.isEmpty()) {
+                throw new ResourceNotFoundException("No more questions available");
+            }
+        }
+
+        int randomIndex = new Random().nextInt(remainingQuestions.size());
+        Question nextQuestion = remainingQuestions.get(randomIndex);
+
+        return nextQuestion;
+    }
+
+
+
     @Override
     public FeedbackResponse getFeedback(AnswerResponse answerResponse) {
         Optional<Quiz> existingQuiz = quizRepository.findById(answerResponse.getQuizId());
@@ -284,42 +323,6 @@ public class QuizServiceImplementation implements QuizService {
     }
 
 
-    //For Regular quiz
-    private Question nextRegularQuestion(Quiz quiz) {
-        Integer effectiveQuestionLimit = quiz.getQuestionsLimit() != null ? quiz.getQuestionsLimit() : quiz.getTopic().getQuestionsList().size();
-        if (quiz.getServedQuestions().size() >= effectiveQuestionLimit) {
-            throw new ResourceNotFoundException("Questions limit reached");
-        }
-        Topic topic = quiz.getTopic();
-        List<Question> servedQuestions = quiz.getServedQuestions();
-        List<Question> questionsList = topic.getQuestionsList();
-        List<Question> remainingQuestions;
-
-        // If a difficulty level is specified, only get questions with the matching difficulty level
-        if(quiz.getDifficultyLevel() != null) {
-            remainingQuestions = questionsList.stream()
-                    .filter(question -> !servedQuestions.contains(question))
-                    .filter(question -> question.getDifficultyLevel().getLevel().equalsIgnoreCase(quiz.getDifficultyLevel().getLevel()))
-                    .collect(Collectors.toList());
-
-            if (remainingQuestions.isEmpty()) {
-                throw new ResourceNotFoundException("No more questions available for the specified difficulty level");
-            }
-        } else {
-            remainingQuestions = questionsList.stream()
-                    .filter(question -> !servedQuestions.contains(question))
-                    .collect(Collectors.toList());
-
-            if (remainingQuestions.isEmpty()) {
-                throw new ResourceNotFoundException("No more questions available");
-            }
-        }
-
-        int randomIndex = new Random().nextInt(remainingQuestions.size());
-        Question nextQuestion = remainingQuestions.get(randomIndex);
-
-        return nextQuestion;
-    }
 
 
     private void answerValidation(AnswerResponse answerResponse, Question lastQuestion) {
@@ -341,10 +344,15 @@ public class QuizServiceImplementation implements QuizService {
 
 
     private void grading(Quiz quiz, Question question, AnswerResponse answerResponse) {
-
+        // List of answer choices from the current response
         List<Choice> answerChoices = answerResponse.getAnswerChoices();
-        List<Choice> correctChoices = question.getChoices().stream().filter((choice) -> choice.isCorrect() == true).toList();
 
+        // List of correct choices for this question
+        List<Choice> correctChoices = question.getChoices().stream()
+                .filter(Choice::isCorrect)
+                .collect(Collectors.toList());
+
+        // Count of correct choices in the current response
         int numberOfCorrectAnswerChoices = 0;
         for(Choice correctChoice : correctChoices) {
             for(Choice answerChoice : answerChoices) {
@@ -357,10 +365,42 @@ public class QuizServiceImplementation implements QuizService {
             }
         }
 
+        // Score for the current response
         double answerScore = ((double) numberOfCorrectAnswerChoices / correctChoices.size()) * question.getScore();
 
+        // Find the existing response for the current question
+        Optional<Response> existingResponseOpt = quiz.getResponses().stream()
+                .filter(response -> response.getQuestion().getId().equals(question.getId()))
+                .findFirst();
+
+        if (existingResponseOpt.isPresent()) {
+            // If a response exists, calculate its score and subtract from the final score
+            Response existingResponse = existingResponseOpt.get();
+
+            // Count of correct choices in the existing response
+            int existingNumberOfCorrectAnswerChoices = 0;
+            for(Choice correctChoice : correctChoices) {
+                for(Choice answerChoice : existingResponse.getChoices()) {
+                    if(answerChoice == null) {
+                        continue;
+                    }
+                    if(correctChoice.getId().equals(answerChoice.getId())) {
+                        existingNumberOfCorrectAnswerChoices++;
+                    }
+                }
+            }
+
+            // Score for the existing response
+            double existingAnswerScore = ((double) existingNumberOfCorrectAnswerChoices / correctChoices.size()) * question.getScore();
+
+            // Subtract the score for the existing response from the quiz's final score
+            quiz.setFinalScore(quiz.getFinalScore() - existingAnswerScore);
+        }
+
+        // Add the score for the current response to the quiz's final score
         quiz.setFinalScore(quiz.getFinalScore() + answerScore);
     }
+
 
     @Override
     public void submitQuiz(Long quizId) {
