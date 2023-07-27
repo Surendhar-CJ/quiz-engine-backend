@@ -16,4 +16,5 @@ public class QuestionAddition {
     private Map<String, Boolean> choices;
     private String explanation;
     private Double score;
+
 }

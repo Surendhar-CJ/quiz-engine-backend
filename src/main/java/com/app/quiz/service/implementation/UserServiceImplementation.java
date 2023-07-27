@@ -3,14 +3,18 @@ package com.app.quiz.service.implementation;
 import com.app.quiz.dto.UserDTO;
 import com.app.quiz.dto.UserQuizDTO;
 import com.app.quiz.dto.mapper.UserDTOMapper;
+import com.app.quiz.dto.mapper.UserTopicDTO;
 import com.app.quiz.entity.Question;
 import com.app.quiz.entity.Quiz;
+import com.app.quiz.entity.Topic;
 import com.app.quiz.entity.User;
 import com.app.quiz.exception.custom.InvalidCredentialsException;
 import com.app.quiz.exception.custom.InvalidInputException;
 import com.app.quiz.exception.custom.ResourceExistsException;
 import com.app.quiz.exception.custom.ResourceNotFoundException;
 import com.app.quiz.repository.QuizRepository;
+import com.app.quiz.repository.RatingRepository;
+import com.app.quiz.repository.TopicRepository;
 import com.app.quiz.repository.UserRepository;
 import com.app.quiz.requestBody.UserLogin;
 import com.app.quiz.requestBody.UserSignUp;
@@ -31,14 +35,18 @@ public class UserServiceImplementation implements UserService {
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final UserDTOMapper userDTOMapper;
     private final QuizRepository quizRepository;
+    private final TopicRepository topicRepository;
+    private final RatingRepository ratingRepository;
     private final QuizServiceImplementation quizServiceImplementation;
     @Autowired
-    public UserServiceImplementation(UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder, UserDTOMapper userDTOMapper, QuizServiceImplementation quizServiceImplementation, QuizRepository quizRepository) {
+    public UserServiceImplementation(UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder, UserDTOMapper userDTOMapper, QuizServiceImplementation quizServiceImplementation, QuizRepository quizRepository, TopicRepository topicRepository, RatingRepository ratingRepository) {
         this.userRepository = userRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.userDTOMapper = userDTOMapper;
         this.quizServiceImplementation = quizServiceImplementation;
         this.quizRepository = quizRepository;
+        this.topicRepository = topicRepository;
+        this.ratingRepository = ratingRepository;
 
     }
 
@@ -69,6 +77,18 @@ public class UserServiceImplementation implements UserService {
                 .map(quiz -> quizServiceImplementation.getQuizResult(quiz.getId()))
                 .toList();
 
+        List<Topic> topics = topicRepository.findAllByUser(user);
+        List<UserTopicDTO> topicsCreated = topics.stream().map(topic -> {
+            Integer numberOfUsersRated = ratingRepository.countByTopicId(topic.getId());
+            return new UserTopicDTO(
+                    topic.getId(),
+                    topic.getName(),
+                    Double.parseDouble(String.format("%.1f", topic.getRating())),
+                    numberOfUsersRated
+            );
+        }).toList();
+
+
         Map<Long, Double> averageScoreByTopic = averagePercentageByTopic(user);
         Map<Long, Double> averageScoreByOtherUsersPerTopic = averagePercentageByOtherUsersPerTopic(user.getId());
 
@@ -78,6 +98,7 @@ public class UserServiceImplementation implements UserService {
                 user.getLastName(),
                 user.getEmail(),
                 userQuizzes,
+                topicsCreated,
                 averageScoreByTopic,
                 averageScoreByOtherUsersPerTopic
         );

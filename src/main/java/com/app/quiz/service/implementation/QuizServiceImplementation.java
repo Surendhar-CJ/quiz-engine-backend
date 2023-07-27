@@ -33,6 +33,7 @@ public class QuizServiceImplementation implements QuizService {
     private final FeedbackRepository feedbackRepository;
     private final FeedbackContentRepository feedbackContentRepository;
     private final ResponseRepository responseRepository;
+    private final RatingRepository ratingRepository;
     private final DifficultyLevelRepository difficultyLevelRepository;
     private final QuizDTOMapper quizDTOMapper;
     private final QuestionDTOMapper questionDTOMapper;
@@ -47,6 +48,7 @@ public class QuizServiceImplementation implements QuizService {
                                      FeedbackContentRepository feedbackContentRepository,
                                      ResponseRepository responseRepository,
                                      DifficultyLevelRepository difficultyLevelRepository,
+                                     RatingRepository ratingRepository,
                                      QuizDTOMapper quizDTOMapper,
                                      QuestionDTOMapper questionDTOMapper,
                                      FeedbackService feedbackService) {
@@ -59,6 +61,7 @@ public class QuizServiceImplementation implements QuizService {
                                     this.feedbackContentRepository = feedbackContentRepository;
                                     this.responseRepository = responseRepository;
                                     this.difficultyLevelRepository = difficultyLevelRepository;
+                                    this.ratingRepository = ratingRepository;
                                     this.quizDTOMapper = quizDTOMapper;
                                     this.questionDTOMapper = questionDTOMapper;
                                     this.feedbackService = feedbackService;
@@ -160,6 +163,10 @@ public class QuizServiceImplementation implements QuizService {
         return questionDTOMapper.apply(question);
     }
 
+
+
+
+
     @Override
     public QuestionDTO nextQuestion(AnswerResponse answerResponse) {
         Optional<Quiz> existingQuiz = quizRepository.findById(answerResponse.getQuizId());
@@ -226,7 +233,7 @@ public class QuizServiceImplementation implements QuizService {
     }
 
 
-    //For Regular quiz
+
     private Question nextRegularQuestion(Quiz quiz) {
         Integer effectiveQuestionLimit = quiz.getQuestionsLimit() != null ? quiz.getQuestionsLimit() : quiz.getTopic().getQuestionsList().size();
         if (quiz.getServedQuestions().size() >= effectiveQuestionLimit) {
@@ -343,6 +350,9 @@ public class QuizServiceImplementation implements QuizService {
     }
 
 
+
+
+
     private void grading(Quiz quiz, Question question, AnswerResponse answerResponse) {
         // List of answer choices from the current response
         List<Choice> answerChoices = answerResponse.getAnswerChoices();
@@ -402,6 +412,8 @@ public class QuizServiceImplementation implements QuizService {
     }
 
 
+
+
     @Override
     public void submitQuiz(Long quizId) {
         Optional<Quiz> existingQuiz = quizRepository.findById(quizId);
@@ -421,6 +433,10 @@ public class QuizServiceImplementation implements QuizService {
 
         quizRepository.save(quiz);
     }
+
+
+
+
 
     @Override
     public QuizResult getQuizResult(Long quizId) {
@@ -523,6 +539,9 @@ public class QuizServiceImplementation implements QuizService {
 
         }
 
+         Optional<Rating> userRating = ratingRepository.findByUserIdAndTopicId(userId, quiz.getTopic().getId());
+        boolean isRated = userRating.isPresent();
+
 
         QuizResult quizResult = new QuizResult(quiz.getId(),
                                                userId,
@@ -545,7 +564,8 @@ public class QuizServiceImplementation implements QuizService {
                                                answerExplanation,
                                                marksScoredPerSubtopic,
                                                totalMarksPerSubtopic,
-                                               percentageScorePerSubtopic
+                                               percentageScorePerSubtopic,
+                                                isRated
                     );
 
         return quizResult;
