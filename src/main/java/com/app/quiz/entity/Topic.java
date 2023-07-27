@@ -7,11 +7,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "topic")
 public class Topic {
@@ -24,10 +24,26 @@ public class Topic {
     @Column(name = "name")
     private String name;
 
+    @ManyToOne
+    @JoinColumn(name= "user_id")
+    private User user;
+
+    @Column(name = "rating")
+    private Double rating;
+
     @JsonIgnore
     @OneToMany(mappedBy = "topic")
     private List<Question> questionsList;
 
     @Transient
     private Integer numberOfQuestions;
+
+    public Topic(String name, User user) {
+        this.name = name;
+        this.user = user;
+        this.rating = 0.0;
+        this.questionsList = new ArrayList<>();
+        this.numberOfQuestions = 0;
+    }
+
 }

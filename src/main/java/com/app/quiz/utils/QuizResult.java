@@ -36,4 +36,5 @@ public final class QuizResult {
         private Map<String, Double> marksScoredPerTopic;
         private Map<String, Double> totalMarksPerTopic;
         private Map<String, Double> percentagePerTopic;
+        private Boolean isRated;
 }

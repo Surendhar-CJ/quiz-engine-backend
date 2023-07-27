@@ -116,19 +116,34 @@ public class QuestionServiceImplementation implements QuestionService {
 
         newQuestion.setDifficultyLevel(difficultyLevel);
 
-        if (questionAddition.getSubtopic() == null || questionAddition.getSubtopic().equals("")) {
-            Subtopic subtopic = subtopicRepository.findByNameAndTopic("General", topic);
 
-            // If a "General" Subtopic doesn't exist for the given Topic, create one.
+        if (questionAddition.getSubtopic() == null || questionAddition.getSubtopic().equals("")) {
+            // Convert "General" to lowercase for comparison
+            Subtopic subtopic = subtopicRepository.findByNameAndTopic("General".toLowerCase(), topic);
             if (subtopic == null) {
                 subtopic = new Subtopic();
+                // Save the name as "General" with the first letter capitalized
                 subtopic.setName("General");
                 subtopic.setTopic(topic);
                 subtopic = subtopicRepository.save(subtopic);
             }
-
+            newQuestion.setSubtopic(subtopic);
+        } else {
+            // Convert the provided subtopic name to lowercase for comparison
+            String subtopicName = questionAddition.getSubtopic().toLowerCase();
+            Subtopic subtopic = subtopicRepository.findByNameAndTopic(subtopicName, topic);
+            if (subtopic == null) {
+                // If the provided subtopic does not exist in the database, create a new one
+                subtopic = new Subtopic();
+                // Save the name with the first letter capitalized and the rest lowercase
+                subtopic.setName(questionAddition.getSubtopic().substring(0, 1).toUpperCase() + questionAddition.getSubtopic().substring(1).toLowerCase());
+                subtopic.setTopic(topic);
+                subtopic = subtopicRepository.save(subtopic);
+            }
             newQuestion.setSubtopic(subtopic);
         }
+
+
 
 
         if(questionAddition.getExplanation().equals("") || questionAddition.getExplanation() == null) {
