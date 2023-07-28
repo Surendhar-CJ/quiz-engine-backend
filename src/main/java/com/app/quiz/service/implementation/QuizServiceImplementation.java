@@ -17,7 +17,6 @@ import com.app.quiz.utils.FeedbackResponse;
 import com.app.quiz.utils.QuizResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -31,7 +30,6 @@ public class QuizServiceImplementation implements QuizService {
     private final TopicRepository topicRepository;
     private final QuestionRepository questionRepository;
     private final FeedbackRepository feedbackRepository;
-    private final FeedbackContentRepository feedbackContentRepository;
     private final ResponseRepository responseRepository;
     private final RatingRepository ratingRepository;
     private final DifficultyLevelRepository difficultyLevelRepository;
@@ -58,7 +56,6 @@ public class QuizServiceImplementation implements QuizService {
                                     this.topicRepository = topicRepository;
                                     this.questionRepository = questionRepository;
                                     this.feedbackRepository = feedbackRepository;
-                                    this.feedbackContentRepository = feedbackContentRepository;
                                     this.responseRepository = responseRepository;
                                     this.difficultyLevelRepository = difficultyLevelRepository;
                                     this.ratingRepository = ratingRepository;
@@ -113,6 +110,8 @@ public class QuizServiceImplementation implements QuizService {
 
        return quizDTOMapper.apply(newQuiz);
     }
+
+
 
     @Override
     public QuestionDTO startQuiz(Long quizId, Long topicId) {
@@ -239,6 +238,7 @@ public class QuizServiceImplementation implements QuizService {
 
 
 
+
     private Question nextRegularQuestion(Quiz quiz) {
         Integer effectiveQuestionLimit = quiz.getQuestionsLimit() != null ? quiz.getQuestionsLimit() : quiz.getTopic().getQuestionsList().size();
         if (quiz.getServedQuestions().size() >= effectiveQuestionLimit) {
@@ -277,6 +277,8 @@ public class QuizServiceImplementation implements QuizService {
 
 
 
+
+
     @Override
     public FeedbackResponse getFeedback(AnswerResponse answerResponse) {
         Optional<Quiz> existingQuiz = quizRepository.findById(answerResponse.getQuizId());
@@ -312,6 +314,9 @@ public class QuizServiceImplementation implements QuizService {
     }
 
 
+
+
+
     private Response addResponse(Quiz quiz, Question question, AnswerResponse answerResponse) {
         // Find the existing response for the current question
         Optional<Response> existingResponse = quiz.getResponses().stream()
@@ -333,6 +338,8 @@ public class QuizServiceImplementation implements QuizService {
 
         return response;
     }
+
+
 
 
 
@@ -507,7 +514,7 @@ public class QuizServiceImplementation implements QuizService {
                                     .filter(response -> response.getQuestion().equals(question))
                                     .flatMap(response -> response.getChoices().stream())
                                     .filter(choice -> choice.isCorrect())
-                                    .mapToDouble(choice -> question.getScore())  // Use the question's score here
+                                    .mapToDouble(choice -> question.getScore())
                                     .sum();
                         })
                 ));

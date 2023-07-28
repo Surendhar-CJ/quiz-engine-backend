@@ -18,5 +18,6 @@ public interface  FeedbackService {
     String overallFeedback(Double percentage);
 
     String subtopicFeedback(Double percentage, String subtopic);
+
     void addFeedback(UserFeedback userFeedback);
 }

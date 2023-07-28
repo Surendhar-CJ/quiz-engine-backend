@@ -3,7 +3,6 @@ package com.app.quiz.utils;
 import com.app.quiz.entity.Choice;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-
 import java.util.List;
 
 @Data

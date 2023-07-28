@@ -9,14 +9,12 @@ import com.app.quiz.utils.FeedbackResponse;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public  class FeedbackServiceImplementation implements FeedbackService {
     private final FeedbackRepository feedbackRepository;
-
     private final FeedbackContentRepository feedbackContentRepository;
     private final UserFeedbackRepository userFeedbackRepository;
     private final UserRepository userRepository;
@@ -31,7 +29,6 @@ public  class FeedbackServiceImplementation implements FeedbackService {
         this.topicRepository = topicRepository;
     }
 
-    // This method is shared among all feedback types.
     private int countCorrectAnswers(Question question, AnswerResponse answerResponse) {
         List<Choice> answerChoices = answerResponse.getAnswerChoices();
         List<Choice> correctChoices = question.getChoices().stream().filter((choice) -> choice.isCorrect() == true).toList();
@@ -45,6 +42,8 @@ public  class FeedbackServiceImplementation implements FeedbackService {
         }
         return numberOfCorrectAnswerChoices;
     }
+
+
 
     @Override
     public FeedbackResponse generateFeedback(Quiz quiz, Question question, AnswerResponse answerResponse) {
@@ -64,6 +63,7 @@ public  class FeedbackServiceImplementation implements FeedbackService {
 
         return feedbackResponse;
     }
+
 
 
     private FeedbackResponse immediateResponse(Question question, int numberOfCorrectAnswerChoices) {
@@ -99,6 +99,8 @@ public  class FeedbackServiceImplementation implements FeedbackService {
         return feedbackResponse;
     }
 
+
+
     private FeedbackResponse immediateCorrectAnswerResponse(Question question, int numberOfCorrectAnswerChoices) {
         String result = "";
         List<Choice> correctChoices = question.getChoices().stream().filter(Choice::isCorrect).toList();
@@ -129,6 +131,8 @@ public  class FeedbackServiceImplementation implements FeedbackService {
 
         return feedbackResponse;
     }
+
+
 
     private FeedbackResponse immediateElaborated(Question question, int numberOfCorrectAnswerChoices) {
         String result = "";
@@ -162,6 +166,7 @@ public  class FeedbackServiceImplementation implements FeedbackService {
     }
 
 
+
     private List<Choice> findCorrectAnswers(Question question) {
         return question.getChoices().stream()
                 .filter(Choice::isCorrect)
@@ -169,10 +174,12 @@ public  class FeedbackServiceImplementation implements FeedbackService {
     }
 
 
+
     @Override
     public List<Feedback> getFeedbackTypes() {
         return feedbackRepository.findAll();
     }
+
 
 
     @Override
@@ -184,6 +191,8 @@ public  class FeedbackServiceImplementation implements FeedbackService {
         return "There appears to be an error with the score calculation. The score percentage falls outside of the expected range. Kindly verify the results.";
     }
 
+
+
     @Override
     public String subtopicFeedback(Double percentage, String subtopic) {
         FeedbackContent feedback = feedbackContentRepository.findTopByMinScoreLessThanEqualAndMaxScoreGreaterThanEqual(percentage, percentage);
@@ -194,14 +203,14 @@ public  class FeedbackServiceImplementation implements FeedbackService {
     }
 
 
+
     @Override
     @Transactional
     public void addFeedback(UserFeedback userFeedback) {
 
-        if(userFeedback.getComment() == "" || userFeedback.getComment() == null) {
+        if(userFeedback.getComment().equals("") || userFeedback.getComment() == null) {
             return;
         }
-
 
         if (userFeedback == null ||
                 userFeedback.getFeedbackByUserId() == null ||

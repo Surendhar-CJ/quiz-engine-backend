@@ -2,7 +2,6 @@ package com.app.quiz.controller;
 
 import com.app.quiz.dto.TopicDTO;
 import com.app.quiz.entity.Rating;
-import com.app.quiz.entity.Topic;
 import com.app.quiz.requestBody.TopicCreation;
 import com.app.quiz.service.TopicService;
 import org.springframework.beans.factory.annotation.Autowired;
