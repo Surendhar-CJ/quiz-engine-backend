@@ -67,7 +67,6 @@ public class QuestionServiceImplementation implements QuestionService {
         } else {
             throw new ResourceNotFoundException("Topic not found");
         }
-        System.out.println(questionAddition.getUserId());
         Optional<User> existingUser = userRepository.findById(questionAddition.getUserId());
 
         User user;
@@ -155,8 +154,6 @@ public class QuestionServiceImplementation implements QuestionService {
         }
 
 
-
-
         if(questionAddition.getExplanation().equals("") || questionAddition.getExplanation() == null) {
             throw new InvalidInputException("Answer explanation cannot be empty");
         }
@@ -166,7 +163,6 @@ public class QuestionServiceImplementation implements QuestionService {
         if(questionType.getType().equalsIgnoreCase("True or False") && questionAddition.getChoices().size() != 2) {
             throw new InvalidInputException("True or False questions must have exactly two choices");
         }
-
         int correctAnswerCount = 0;
         for(Map.Entry<String, Boolean> entry : questionAddition.getChoices().entrySet()) {
             String currentChoice = entry.getKey();
@@ -177,14 +173,19 @@ public class QuestionServiceImplementation implements QuestionService {
             newQuestion.getChoices().add(choice);
         }
 
+        if(questionType.getType().equalsIgnoreCase("Multiple Choice") && questionAddition.getChoices().size() <= 1) {
+            throw new InvalidInputException("Multiple Choice Questions must have at least two choices");
+        }
         if(questionType.getType().equalsIgnoreCase("Multiple Choice") && correctAnswerCount != 1) {
             throw new InvalidInputException("Multiple Choice Questions must have exactly one correct answer");
         }
 
+        if(questionType.getType().equalsIgnoreCase("Multiple Answer") && questionAddition.getChoices().size() <= 2) {
+            throw new InvalidInputException("Multiple Choice Questions must have at least three choices");
+        }
         if(questionType.getType().equalsIgnoreCase("Multiple Answer") && correctAnswerCount < 2) {
             throw new InvalidInputException("Multiple Answer Questions must have at least two correct answers");
         }
-
         Question question = questionRepository.save(newQuestion);
 
         return questionDTOMapper.apply(question);

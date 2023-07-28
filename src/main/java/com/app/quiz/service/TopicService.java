@@ -2,7 +2,6 @@ package com.app.quiz.service;
 
 import com.app.quiz.dto.TopicDTO;
 import com.app.quiz.entity.Rating;
-import com.app.quiz.entity.Topic;
 import com.app.quiz.requestBody.TopicCreation;
 
 import java.util.List;

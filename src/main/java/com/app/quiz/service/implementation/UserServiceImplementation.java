@@ -13,11 +13,9 @@ import com.app.quiz.requestBody.UserSignUp;
 import com.app.quiz.service.UserService;
 import com.app.quiz.utils.QuizResult;
 import com.app.quiz.utils.RegexPattern;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -57,6 +55,8 @@ public class UserServiceImplementation implements UserService {
 
         return userDTOMapper.apply(validatedUser);
     }
+
+
 
     @Override
     public UserQuizDTO getUserById(Long id) {
@@ -147,6 +147,8 @@ public class UserServiceImplementation implements UserService {
         return userDTOMapper.apply(user);
     }
 
+
+
     private Map<Long, Double> averagePercentageByTopic(User user) {
         List<Quiz> quizList = user.getQuizList();
         Map<Long, Double> sumPercentageByTopic = new HashMap<>();
@@ -183,6 +185,8 @@ public class UserServiceImplementation implements UserService {
 
         return averagePercentageByTopic;
     }
+
+
 
     private Map<Long, Double> averagePercentageByOtherUsersPerTopic(Long currentUserId) {
         List<Quiz> allQuizzes = quizRepository.findByUserIdNot(currentUserId);
@@ -261,4 +265,6 @@ public class UserServiceImplementation implements UserService {
 
         return user;
     }
+
+
 }

@@ -77,6 +77,8 @@ public class TopicServiceImplementation implements TopicService {
         return topicDTOs;
     }
 
+
+
     @Override
     public List<TopicDTO> createTopic(TopicCreation topicCreation) {
 
@@ -98,6 +100,9 @@ public class TopicServiceImplementation implements TopicService {
         return topics();
 
     }
+
+
+
 
     @Override
     @Transactional
@@ -122,6 +127,10 @@ public class TopicServiceImplementation implements TopicService {
 
         topicRepository.delete(topic);
     }
+
+
+
+
 
     @Override
     public Double rateTopic(Rating rating) {
