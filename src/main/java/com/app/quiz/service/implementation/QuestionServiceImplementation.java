@@ -163,7 +163,6 @@ public class QuestionServiceImplementation implements QuestionService {
         if(questionType.getType().equalsIgnoreCase("True or False") && questionAddition.getChoices().size() != 2) {
             throw new InvalidInputException("True or False questions must have exactly two choices");
         }
-        System.out.println(questionAddition.getChoices());
         int correctAnswerCount = 0;
         for(Map.Entry<String, Boolean> entry : questionAddition.getChoices().entrySet()) {
             String currentChoice = entry.getKey();
