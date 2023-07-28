@@ -102,6 +102,48 @@ public class TopicServiceImplementation implements TopicService {
     }
 
 
+    @Override
+    public TopicDTO getTopic(Long topicId) {
+        Optional<Topic> existingTopic = topicRepository.findById(topicId);
+
+        if(existingTopic.isEmpty()) {
+            throw new ResourceNotFoundException("Topic not found");
+        }
+
+        Topic topic = existingTopic.get();
+
+        // Initialize Map to store counts of different difficulty levels
+        Map<String, Integer> difficultyCount = new HashMap<>();
+        difficultyCount.put("easy", 0);
+        difficultyCount.put("medium", 0);
+        difficultyCount.put("hard", 0);
+
+        // Iterate over each question for this topic
+        for (Question question : topic.getQuestionsList()) {
+            String difficulty = question.getDifficultyLevel().getLevel().toLowerCase();
+            // Increment the count for the corresponding difficulty level
+            difficultyCount.put(difficulty, difficultyCount.getOrDefault(difficulty, 0) + 1);
+        }
+
+        Integer numberOfUsersRated = ratingRepository.countByTopicId(topic.getId());
+        List<Subtopic> subtopics = subtopicRepository.findByTopicId(topic.getId());
+
+        // Populate the DTO
+        TopicDTO topicDTO = new TopicDTO(
+                topic.getId(),
+                topic.getName(),
+                topic.getUser().getFirstName() + " " + topic.getUser().getLastName(),
+                Double.parseDouble(String.format("%.1f", topic.getRating())), // Format the rating,
+                numberOfUsersRated,
+                topic.getQuestionsList().size(),
+                difficultyCount.get("easy"),
+                difficultyCount.get("medium"),
+                difficultyCount.get("hard"),
+                subtopics
+        );
+
+        return topicDTO;
+    }
 
 
     @Override
