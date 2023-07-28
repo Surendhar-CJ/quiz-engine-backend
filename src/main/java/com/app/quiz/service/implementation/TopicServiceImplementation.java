@@ -91,7 +91,7 @@ public class TopicServiceImplementation implements TopicService {
             throw new InvalidInputException("User id not found");
         }
         // Convert first letter to uppercase and rest to lowercase
-        String formattedName = name.substring(0, 1).toUpperCase() + name.substring(1).toLowerCase();
+        String formattedName = formatName(name);
 
         Topic topic = new Topic(formattedName, user.get());
 
@@ -173,6 +173,18 @@ public class TopicServiceImplementation implements TopicService {
     }
 
 
+
+    private String formatName(String name) {
+        String[] words = name.split(" ");
+        StringBuilder sb = new StringBuilder();
+
+        for (String word : words) {
+            String formattedWord = word.substring(0, 1).toUpperCase() + word.substring(1).toLowerCase();
+            sb.append(formattedWord).append(" ");
+        }
+
+        return sb.toString().trim();
+    }
 
 
 }
