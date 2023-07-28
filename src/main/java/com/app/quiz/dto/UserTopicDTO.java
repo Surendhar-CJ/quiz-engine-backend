@@ -1,4 +1,4 @@
-package com.app.quiz.dto.mapper;
+package com.app.quiz.dto;
 
 public record UserTopicDTO(
         Long id,

@@ -80,6 +80,11 @@ public class QuizServiceImplementation implements QuizService {
             throw new ResourceNotFoundException("Topic with "+ configureQuiz.getTopicId()+" is not found");
         }
         Topic topic = existingTopic.get();
+
+        if(topic.getQuestionsList().size() == 0) {
+            throw new InvalidInputException("Topic does not have any questions");
+        }
+
         topic.setNumberOfQuestions(topic.getQuestionsList().size());
 
         Optional<Feedback> feedback = feedbackRepository.findById(configureQuiz.getFeedbackId());
@@ -573,155 +578,4 @@ public class QuizServiceImplementation implements QuizService {
 
 
 
-
-
-
-
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*   private String getNextDifficultyLevel(String currentDifficulty) {
-        switch (currentDifficulty.toLowerCase()) {
-            case "easy":
-                return "medium";
-            case "medium":
-                return "hard";
-            default:
-                return "hard";
-        }
-    }
-
-    private String getPreviousDifficultyLevel(String currentDifficulty) {
-        switch (currentDifficulty.toLowerCase()) {
-            case "hard":
-                return "medium";
-            case "medium":
-                return "easy";
-            default:
-                return "easy";
-        }
-    }
-
-    private Question nextAdaptiveQuestion(Quiz quiz, AnswerResponse answerResponse, Question lastQuestion) {
-
-        // Check if last question was answered correctly
-        List<Choice> answerChoices = answerResponse.getAnswerChoices();
-        List<Choice> databaseChoices = new ArrayList<>();
-
-
-        // Convert the last question's choices to a set for faster lookups
-        Set<Choice> lastQuestionChoices = new HashSet<>(lastQuestion.getChoices());
-
-        for(Choice choice : answerChoices) {
-            Optional<Choice> databaseChoiceOptional = choiceRepository.findById((choice.getId()));
-            if(databaseChoiceOptional.isEmpty()) {
-                throw new ResourceNotFoundException("Choice with id "+choice.getId()+" is not found");
-            } else {
-                Choice databaseChoice = databaseChoiceOptional.get();
-
-                // Check if the choice is valid for the last question
-                if (!lastQuestionChoices.contains(databaseChoice)) {
-                    throw new InvalidInputException("Invalid choice id for the given question");
-                }
-
-                databaseChoices.add(databaseChoice);
-            }
-        }
-
-        boolean isCorrect = true; // Assume all choices are correct
-        for (Choice choice : databaseChoices) {
-            if (!choice.isCorrect()) {
-                isCorrect = false; // If any choice is not correct, set isCorrect to false
-                break; // No need to check the rest of the choices
-            }
-        }
-
-        // Select next question based on performance
-        String currentDifficulty = lastQuestion.getDifficultyLevel().getLevel();
-        String nextDifficulty;
-        if (isCorrect) {
-            nextDifficulty = getNextDifficultyLevel(currentDifficulty);
-        } else {
-            nextDifficulty = getPreviousDifficultyLevel(currentDifficulty);
-        }
-
-        Topic topic = quiz.getTopic();
-        List<Question> allQuestions = topic.getQuestionsList();
-        Question nextQuestion = allQuestions.stream()
-                .filter(question -> question.getDifficultyLevel().getLevel().equalsIgnoreCase(nextDifficulty))
-                .filter(question -> !quiz.getServedQuestions().contains(question)) // make sure question hasn't been served before
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("No more questions available"));
-
-        return nextQuestion;
-    } */
-
-
-//Without using database for choices
-
-    /*private Question nextAdaptiveQuestion(Quiz quiz, AnswerResponse answerResponse, Question lastQuestion) {
-
-        // Check if last question was answered correctly
-        List<Choice> answerChoices = answerResponse.getAnswerChoices();
-        List<Choice> databaseChoices = new ArrayList<>();
-
-        // Convert the last question's choices to a map for faster lookups
-        Map<Long, Choice> lastQuestionChoicesMap = lastQuestion.getChoices().stream()
-                .collect(Collectors.toMap(Choice::getId, Function.identity()));
-
-        for(Choice choice : answerChoices) {
-            Choice databaseChoice = lastQuestionChoicesMap.get(choice.getId());
-
-            if(databaseChoice == null) {
-                throw new ResourceNotFoundException("Choice with id "+choice.getId()+" is not found");
-            } else {
-                // Check if the choice is valid for the last question
-                if (!lastQuestionChoicesMap.containsKey(databaseChoice.getId())) {
-                    throw new InvalidInputException("Invalid choice id for the given question");
-                }
-
-                databaseChoices.add(databaseChoice);
-            }
-        }
-
-        boolean isCorrect = true; // Assume all choices are correct
-        for (Choice choice : databaseChoices) {
-            if (!choice.isCorrect()) {
-                isCorrect = false; // If any choice is not correct, set isCorrect to false
-                break; // No need to check the rest of the choices
-            }
-        }
-        // Select next question based on performance
-        String currentDifficulty = lastQuestion.getDifficultyLevel().getLevel();
-        String nextDifficulty;
-        if (isCorrect) {
-            nextDifficulty = getNextDifficultyLevel(currentDifficulty);
-        } else {
-            nextDifficulty = getPreviousDifficultyLevel(currentDifficulty);
-        }
-
-        Topic topic = quiz.getTopic();
-        List<Question> allQuestions = topic.getQuestionsList();
-        Question nextQuestion = allQuestions.stream()
-                .filter(question -> question.getDifficultyLevel().getLevel().equalsIgnoreCase(nextDifficulty))
-                .filter(question -> !quiz.getServedQuestions().contains(question)) // make sure question hasn't been served before
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("No more questions available"));
-
-        return nextQuestion;
-
-
-
-    } */

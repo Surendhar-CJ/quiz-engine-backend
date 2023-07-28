@@ -10,6 +10,7 @@ import com.app.quiz.repository.TopicRepository;
 import com.app.quiz.repository.UserRepository;
 import com.app.quiz.requestBody.TopicCreation;
 import com.app.quiz.service.TopicService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -99,6 +100,7 @@ public class TopicServiceImplementation implements TopicService {
     }
 
     @Override
+    @Transactional
     public void deleteTopicById(Long topicId, Long userId) {
         Optional<Topic> topicOptional = topicRepository.findById(topicId);
 
@@ -114,6 +116,9 @@ public class TopicServiceImplementation implements TopicService {
         if (creator == null || !creator.getId().equals(userId)) {
             throw new InvalidInputException("Only the creator can delete this topic");
         }
+
+        // Delete ratings associated with the topic
+        ratingRepository.deleteByTopicId(topicId);
 
         topicRepository.delete(topic);
     }
