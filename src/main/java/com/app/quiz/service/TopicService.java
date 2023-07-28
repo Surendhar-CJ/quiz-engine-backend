@@ -12,6 +12,8 @@ public interface TopicService {
 
     List<TopicDTO> createTopic(TopicCreation topicCreation);
 
+    TopicDTO getTopic(Long topicId);
+
     void deleteTopicById(Long topicId, Long userId);
 
     Double rateTopic(Rating rating);

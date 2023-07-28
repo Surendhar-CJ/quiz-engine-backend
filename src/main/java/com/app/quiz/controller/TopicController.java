@@ -33,6 +33,12 @@ public class TopicController {
         return new ResponseEntity<>(topicService.createTopic(topicCreation), HttpStatus.CREATED);
     }
 
+    @GetMapping("/{topicId}")
+    public ResponseEntity<TopicDTO> getTopic(@PathVariable("topicId") Long topicId) {
+        return new ResponseEntity<>(topicService.getTopic(topicId), HttpStatus.FOUND);
+    }
+
+
     @DeleteMapping("/{topicId}/{userId}")
     public ResponseEntity<Void> deleteTopic(@PathVariable("topicId") Long topicId, @PathVariable("userId") Long userId) {
         topicService.deleteTopicById(topicId, userId);
