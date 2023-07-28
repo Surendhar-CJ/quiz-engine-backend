@@ -23,16 +23,18 @@ public class QuestionServiceImplementation implements QuestionService {
     private final DifficultyLevelRepository difficultyLevelRepository;
     private final QuestionTypeRepository questionTypeRepository;
     private final SubtopicRepository subtopicRepository;
+    private final UserRepository userRepository;
     private final QuestionDTOMapper questionDTOMapper;
 
     @Autowired
-    public QuestionServiceImplementation(QuestionRepository questionRepository, TopicRepository topicRepository, DifficultyLevelRepository difficultyLevelRepository, SubtopicRepository subtopicRepository, QuestionTypeRepository questionTypeRepository, QuestionDTOMapper questionDTOMapper) {
+    public QuestionServiceImplementation(QuestionRepository questionRepository, TopicRepository topicRepository, DifficultyLevelRepository difficultyLevelRepository, SubtopicRepository subtopicRepository, QuestionTypeRepository questionTypeRepository, UserRepository userRepository, QuestionDTOMapper questionDTOMapper) {
         this.questionRepository = questionRepository;
         this.topicRepository = topicRepository;
         this.difficultyLevelRepository = difficultyLevelRepository;
         this.questionTypeRepository = questionTypeRepository;
         this.subtopicRepository = subtopicRepository;
         this.questionDTOMapper =  questionDTOMapper;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -65,6 +67,15 @@ public class QuestionServiceImplementation implements QuestionService {
         } else {
             throw new ResourceNotFoundException("Topic not found");
         }
+        System.out.println(questionAddition.getUserId());
+        Optional<User> existingUser = userRepository.findById(questionAddition.getUserId());
+
+        User user;
+        if (existingUser.isPresent()) {
+            user = existingUser.get();
+        } else {
+            throw new ResourceNotFoundException("User not found");
+        }
 
         Optional<DifficultyLevel> existingDifficultyLevel = difficultyLevelRepository.findByLevel(questionAddition.getDifficultyLevel().toUpperCase());
 
@@ -87,7 +98,7 @@ public class QuestionServiceImplementation implements QuestionService {
         Question newQuestion = new Question();
 
         newQuestion.setTopic(topic);
-
+        newQuestion.setUser(user);
         if(questionAddition.getQuestionText() == null || questionAddition.getQuestionText().equals("")) {
             throw new InvalidInputException("Question cannot be empty");
         }
@@ -177,5 +188,29 @@ public class QuestionServiceImplementation implements QuestionService {
         Question question = questionRepository.save(newQuestion);
 
         return questionDTOMapper.apply(question);
+    }
+
+    @Override
+    public void deleteQuestionById(Long questionId, Long userId) {
+
+        Optional<User> existingUser = userRepository.findById(userId);
+
+        User user;
+        if (existingUser.isPresent()) {
+            user = existingUser.get();
+        } else {
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        Optional<Question> existingQuestion = questionRepository.findById(questionId);
+        Question question;
+        if (existingQuestion.isPresent()) {
+            question = existingQuestion.get();
+        } else {
+            throw new ResourceNotFoundException("Question not found");
+        }
+
+        questionRepository.delete(question);
+
     }
 }

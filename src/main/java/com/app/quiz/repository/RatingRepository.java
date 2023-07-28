@@ -16,4 +16,6 @@ public interface RatingRepository extends JpaRepository<Rating, Long> {
 
     Integer countByTopicId(Long id);
 
+    void deleteByTopicId(Long topicId);
+
 }

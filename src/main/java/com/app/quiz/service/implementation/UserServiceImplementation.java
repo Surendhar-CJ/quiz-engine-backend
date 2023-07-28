@@ -1,32 +1,26 @@
 package com.app.quiz.service.implementation;
 
-import com.app.quiz.dto.UserDTO;
-import com.app.quiz.dto.UserQuizDTO;
+import com.app.quiz.dto.*;
 import com.app.quiz.dto.mapper.UserDTOMapper;
-import com.app.quiz.dto.mapper.UserTopicDTO;
-import com.app.quiz.entity.Question;
-import com.app.quiz.entity.Quiz;
-import com.app.quiz.entity.Topic;
-import com.app.quiz.entity.User;
+import com.app.quiz.entity.*;
 import com.app.quiz.exception.custom.InvalidCredentialsException;
 import com.app.quiz.exception.custom.InvalidInputException;
 import com.app.quiz.exception.custom.ResourceExistsException;
 import com.app.quiz.exception.custom.ResourceNotFoundException;
-import com.app.quiz.repository.QuizRepository;
-import com.app.quiz.repository.RatingRepository;
-import com.app.quiz.repository.TopicRepository;
-import com.app.quiz.repository.UserRepository;
+import com.app.quiz.repository.*;
 import com.app.quiz.requestBody.UserLogin;
 import com.app.quiz.requestBody.UserSignUp;
 import com.app.quiz.service.UserService;
 import com.app.quiz.utils.QuizResult;
 import com.app.quiz.utils.RegexPattern;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImplementation implements UserService {
@@ -37,17 +31,21 @@ public class UserServiceImplementation implements UserService {
     private final QuizRepository quizRepository;
     private final TopicRepository topicRepository;
     private final RatingRepository ratingRepository;
+    private final QuestionRepository questionRepository;
     private final QuizServiceImplementation quizServiceImplementation;
+    private final UserFeedbackRepository userFeedbackRepository;
+
     @Autowired
-    public UserServiceImplementation(UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder, UserDTOMapper userDTOMapper, QuizServiceImplementation quizServiceImplementation, QuizRepository quizRepository, TopicRepository topicRepository, RatingRepository ratingRepository) {
+    public UserServiceImplementation(UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder, UserDTOMapper userDTOMapper, QuizRepository quizRepository, TopicRepository topicRepository, RatingRepository ratingRepository, QuestionRepository questionRepository, QuizServiceImplementation quizServiceImplementation, UserFeedbackRepository userFeedbackRepository) {
         this.userRepository = userRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.userDTOMapper = userDTOMapper;
-        this.quizServiceImplementation = quizServiceImplementation;
         this.quizRepository = quizRepository;
         this.topicRepository = topicRepository;
         this.ratingRepository = ratingRepository;
-
+        this.questionRepository = questionRepository;
+        this.quizServiceImplementation = quizServiceImplementation;
+        this.userFeedbackRepository = userFeedbackRepository;
     }
 
     @Override
@@ -89,6 +87,28 @@ public class UserServiceImplementation implements UserService {
         }).toList();
 
 
+        Long userId = user.getId();
+        List<Question> questionsCreatedByUser = questionRepository.findByUserId(userId);
+
+        List<UserQuestionDTO> questionsCreated = questionsCreatedByUser.stream().map(question ->
+                        new UserQuestionDTO(question.getId(), question.getTopic().getName(), question.getText(), question.getChoices(), question.getExplanation()))
+                                            .toList();
+
+        List<UserFeedback> feedbacks = userFeedbackRepository.findByFeedbackForUserId(userId);
+
+        List<UserFeedbackDTO> feedbacksReceived = feedbacks.stream().map(feedback -> {
+            User feedbackByUser = userRepository.findById(feedback.getFeedbackByUserId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            Topic feedbackTopic = topicRepository.findById(feedback.getTopicId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Topic not found"));
+
+            return new UserFeedbackDTO(
+                    feedbackByUser.getFirstName() + " " + feedbackByUser.getLastName(),
+                    feedbackTopic.getName(),
+                    feedback.getComment()
+            );
+        }).collect(Collectors.toList());
+
         Map<Long, Double> averageScoreByTopic = averagePercentageByTopic(user);
         Map<Long, Double> averageScoreByOtherUsersPerTopic = averagePercentageByOtherUsersPerTopic(user.getId());
 
@@ -99,10 +119,15 @@ public class UserServiceImplementation implements UserService {
                 user.getEmail(),
                 userQuizzes,
                 topicsCreated,
+                questionsCreated,
+                feedbacksReceived,
                 averageScoreByTopic,
                 averageScoreByOtherUsersPerTopic
         );
     }
+
+
+
 
     @Override
     public UserDTO login(UserLogin userLogin) {

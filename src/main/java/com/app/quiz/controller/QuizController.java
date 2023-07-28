@@ -76,5 +76,4 @@ public class QuizController {
         return new ResponseEntity<>(feedbackService.getFeedbackTypes(), HttpStatus.OK);
     }
 
-
 }

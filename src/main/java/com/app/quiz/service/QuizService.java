@@ -2,6 +2,7 @@ package com.app.quiz.service;
 
 import com.app.quiz.dto.QuestionDTO;
 import com.app.quiz.dto.QuizDTO;
+import com.app.quiz.entity.UserFeedback;
 import com.app.quiz.requestBody.AnswerResponse;
 import com.app.quiz.requestBody.ConfigureQuiz;
 import com.app.quiz.utils.FeedbackResponse;
@@ -20,4 +21,6 @@ public interface QuizService {
     void submitQuiz(Long quizId);
 
     QuizResult getQuizResult(Long quizId);
+
+
 }

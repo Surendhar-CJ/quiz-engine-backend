@@ -3,11 +3,13 @@ package com.app.quiz.controller;
 import com.app.quiz.config.jwt.JWTService;
 import com.app.quiz.config.jwt.TokenBlacklist;
 import com.app.quiz.dto.UserDTO;
+import com.app.quiz.dto.UserFeedbackDTO;
 import com.app.quiz.dto.UserQuizDTO;
-import com.app.quiz.entity.User;
+import com.app.quiz.entity.UserFeedback;
 import com.app.quiz.requestBody.UserLogin;
 import com.app.quiz.requestBody.UserSignUp;
 import com.app.quiz.service.UserService;
+import com.app.quiz.service.feedback.FeedbackService;
 import com.app.quiz.utils.UserResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,12 +25,14 @@ public class UserController {
     private final UserService userService;
     private final JWTService jwtService;
     private final TokenBlacklist tokenBlacklist;
+    private final FeedbackService feedbackService;
 
     @Autowired
-    public UserController(UserService userService, JWTService jwtService, TokenBlacklist tokenBlacklist) {
+    public UserController(UserService userService, JWTService jwtService, TokenBlacklist tokenBlacklist, FeedbackService feedbackService) {
         this.userService = userService;
         this.jwtService = jwtService;
         this.tokenBlacklist = tokenBlacklist;
+        this.feedbackService = feedbackService;
     }
 
     @PostMapping("/users")
@@ -43,6 +47,11 @@ public class UserController {
         return new ResponseEntity<>(user, HttpStatus.FOUND);
     }
 
+    @PostMapping("/comments")
+    public ResponseEntity<Void> addComment(@RequestBody UserFeedback userFeedback) {
+        feedbackService.addFeedback(userFeedback);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
 
     @PostMapping("/login")
     public ResponseEntity<UserResponse> login(@RequestBody UserLogin userLogin) {

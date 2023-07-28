@@ -2,10 +2,11 @@ package com.app.quiz.service.feedback;
 
 
 import com.app.quiz.entity.*;
-import com.app.quiz.repository.FeedbackContentRepository;
-import com.app.quiz.repository.FeedbackRepository;
+import com.app.quiz.exception.custom.ResourceNotFoundException;
+import com.app.quiz.repository.*;
 import com.app.quiz.requestBody.AnswerResponse;
 import com.app.quiz.utils.FeedbackResponse;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,11 +18,17 @@ public  class FeedbackServiceImplementation implements FeedbackService {
     private final FeedbackRepository feedbackRepository;
 
     private final FeedbackContentRepository feedbackContentRepository;
+    private final UserFeedbackRepository userFeedbackRepository;
+    private final UserRepository userRepository;
+    private final TopicRepository topicRepository;
 
     @Autowired
-    public FeedbackServiceImplementation(FeedbackRepository feedbackRepository, FeedbackContentRepository feedbackContentRepository) {
+    public FeedbackServiceImplementation(FeedbackRepository feedbackRepository, FeedbackContentRepository feedbackContentRepository, UserFeedbackRepository userFeedbackRepository, UserRepository userRepository, TopicRepository topicRepository) {
         this.feedbackRepository = feedbackRepository;
         this.feedbackContentRepository = feedbackContentRepository;
+        this.userFeedbackRepository = userFeedbackRepository;
+        this.userRepository = userRepository;
+        this.topicRepository = topicRepository;
     }
 
     // This method is shared among all feedback types.
@@ -185,5 +192,44 @@ public  class FeedbackServiceImplementation implements FeedbackService {
         }
         return "An error has occurred as the score percentage falls outside of the expected range. Please verify the results.";
     }
+
+
+    @Override
+    @Transactional
+    public void addFeedback(UserFeedback userFeedback) {
+
+        if(userFeedback.getComment() == "" || userFeedback.getComment() == null) {
+            return;
+        }
+
+
+        if (userFeedback == null ||
+                userFeedback.getFeedbackByUserId() == null ||
+                userFeedback.getTopicId() == null ||
+                userFeedback.getFeedbackForUserId() == null) {
+            throw new IllegalArgumentException("Invalid user feedback data");
+        }
+
+        // Check if the user who is giving the feedback exists
+        if (!userRepository.existsById(userFeedback.getFeedbackByUserId())) {
+            throw new ResourceNotFoundException("User not found with id: " + userFeedback.getFeedbackByUserId());
+        }
+
+        // Check if the user who is receiving the feedback exists
+        if (!userRepository.existsById(userFeedback.getFeedbackForUserId())) {
+            throw new ResourceNotFoundException("User not found with id: " + userFeedback.getFeedbackForUserId());
+        }
+
+        // Check if the topic exists
+        if (!topicRepository.existsById(userFeedback.getTopicId())) {
+            throw new ResourceNotFoundException("Topic not found with id: " + userFeedback.getTopicId());
+        }
+
+        userFeedbackRepository.save(userFeedback);
+    }
+
+
+
+
 
 }

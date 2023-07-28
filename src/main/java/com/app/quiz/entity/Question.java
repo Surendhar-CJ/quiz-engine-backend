@@ -48,7 +48,12 @@ public class Question {
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL)
     private List<Choice> choices;
 
-    public Question(String text, QuestionType type, Double score, Topic topic, Subtopic subtopic, DifficultyLevel difficultyLevel, List<Choice> choices) {
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @ToString.Exclude
+    private User user;
+
+    public Question(String text, QuestionType type, Double score, Topic topic, Subtopic subtopic, DifficultyLevel difficultyLevel, List<Choice> choices, User user) {
         this.text = text;
         this.type = type;
         this.score = score;
@@ -56,6 +61,7 @@ public class Question {
         this.subtopic = subtopic;
         this.difficultyLevel = difficultyLevel;
         this.choices = new ArrayList<>();
+        this.user = user;
     }
 
     public Question() {

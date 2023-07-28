@@ -3,6 +3,7 @@ package com.app.quiz.service.feedback;
 import com.app.quiz.entity.Feedback;
 import com.app.quiz.entity.Question;
 import com.app.quiz.entity.Quiz;
+import com.app.quiz.entity.UserFeedback;
 import com.app.quiz.requestBody.AnswerResponse;
 import com.app.quiz.utils.FeedbackResponse;
 
@@ -17,4 +18,5 @@ public interface  FeedbackService {
     String overallFeedback(Double percentage);
 
     String subtopicFeedback(Double percentage, String subtopic);
+    void addFeedback(UserFeedback userFeedback);
 }

@@ -34,4 +34,10 @@ public class QuestionController {
         QuestionDTO question = questionService.addQuestion(questionAddition);
         return new ResponseEntity<>(question, HttpStatus.CREATED);
     }
+
+    @DeleteMapping("/questions/{questionId}/{userId}")
+    public ResponseEntity<Void> deleteQuestion(@PathVariable("questionId") Long questionId, @PathVariable("userId") Long userId) {
+        questionService.deleteQuestionById(questionId, userId);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
 }

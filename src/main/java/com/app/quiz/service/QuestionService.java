@@ -12,4 +12,6 @@ public interface QuestionService {
 
     QuestionDTO addQuestion(QuestionAddition questionAddition);
 
+    void deleteQuestionById(Long questionId, Long userId);
+
 }
