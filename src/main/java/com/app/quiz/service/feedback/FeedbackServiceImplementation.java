@@ -9,10 +9,7 @@ import com.app.quiz.utils.FeedbackResponse;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,76 +29,72 @@ public  class FeedbackServiceImplementation implements FeedbackService {
         this.topicRepository = topicRepository;
     }
 
-    private Map<String, Integer> countAnswers(Question question, AnswerResponse answerResponse) {
+ private int countCorrectAnswers(Question question, AnswerResponse answerResponse) {
         List<Choice> answerChoices = answerResponse.getAnswerChoices();
-        List<Choice> correctChoices = question.getChoices().stream().filter(Choice::isCorrect).collect(Collectors.toList());
-
+        List<Choice> correctChoices = question.getChoices().stream().filter((choice) -> choice.isCorrect()).toList();
         int numberOfCorrectAnswerChoices = 0;
-        int numberOfIncorrectAnswerChoices = 0;
-
-        for (Choice answerChoice : answerChoices) {
-            if (correctChoices.contains(answerChoice)) {
-                numberOfCorrectAnswerChoices++;
-            } else {
-                numberOfIncorrectAnswerChoices++;
+        for (Choice correctChoice : correctChoices) {
+            for (Choice answerChoice : answerChoices) {
+                if (correctChoice.getId().equals(answerChoice.getId())) {
+                    numberOfCorrectAnswerChoices++;
+                }
             }
         }
-
-        Map<String, Integer> answerCount = new HashMap<>();
-        answerCount.put("correct", numberOfCorrectAnswerChoices);
-        answerCount.put("incorrect", numberOfIncorrectAnswerChoices);
-
-        return answerCount;
+        return numberOfCorrectAnswerChoices;
     }
 
 
 
     @Override
     public FeedbackResponse generateFeedback(Quiz quiz, Question question, AnswerResponse answerResponse) {
+
         FeedbackResponse feedbackResponse = null;
-        Map<String, Integer> answerCounts = countAnswers(question, answerResponse);
+        int numberOfCorrectAnswerChoices = countCorrectAnswers(question, answerResponse);
 
         String feedbackType = quiz.getFeedbackType().getType();
 
         if ("Instant Feedback".equalsIgnoreCase(feedbackType)) {
-            feedbackResponse = immediateResponse(question, answerCounts);
+            feedbackResponse = immediateResponse(question, numberOfCorrectAnswerChoices, answerResponse);
         } else if ("Instant Correct Answer Feedback".equalsIgnoreCase(feedbackType)) {
-            feedbackResponse = immediateCorrectAnswerResponse(question, answerCounts);
+            feedbackResponse = immediateCorrectAnswerResponse(question, numberOfCorrectAnswerChoices, answerResponse);
         } else if ("Instant Detailed Feedback".equalsIgnoreCase(feedbackType)) {
-            feedbackResponse = immediateElaborated(question, answerCounts);
+            feedbackResponse = immediateElaborated(question, numberOfCorrectAnswerChoices, answerResponse);
         }
 
         return feedbackResponse;
     }
 
 
-    private FeedbackResponse immediateResponse(Question question, Map<String, Integer> answerCounts) {
+
+    private FeedbackResponse immediateResponse(Question question, int numberOfCorrectAnswerChoices, AnswerResponse answerResponse) {
         String result = "";
 
-        int totalCorrectChoices = answerCounts.get("correct");
-        int totalIncorrectChoices = answerCounts.get("incorrect");
+        List<Choice> correctChoices = question.getChoices().stream().filter(Choice::isCorrect).toList();
+        int totalCorrectChoices = correctChoices.size();
+        List<Choice> answerChoices = answerResponse.getAnswerChoices();
 
         if (question.getType().getType().equalsIgnoreCase("Multiple Choice") ||
                 question.getType().getType().equalsIgnoreCase("True or False")) {
-            if (totalCorrectChoices == 0) {
+            if (numberOfCorrectAnswerChoices == 0) {
                 result = "Incorrect";
             } else {
                 result = "Correct";
             }
         } else if(question.getType().getType().equalsIgnoreCase("Multiple Answer")) {
-            if (totalCorrectChoices == 0) {
+            if (numberOfCorrectAnswerChoices == 0) {
                 result = "Incorrect";
-            }  else if (totalCorrectChoices > 0 && totalIncorrectChoices > 0){
+            } else if (numberOfCorrectAnswerChoices < totalCorrectChoices || (numberOfCorrectAnswerChoices == totalCorrectChoices && answerChoices.size() > totalCorrectChoices)) {
                 result = "Partially Correct";
             } else {
                 result = "Correct";
             }
         }
 
+        FeedbackResponse feedbackResponse;
         List<Choice> correctAnswer = null;
         String explanation = "";
 
-        FeedbackResponse feedbackResponse = new FeedbackResponse(result, correctAnswer, explanation);
+        feedbackResponse = new FeedbackResponse(result, correctAnswer, explanation);
 
         return feedbackResponse;
     }
@@ -109,29 +102,30 @@ public  class FeedbackServiceImplementation implements FeedbackService {
 
 
 
-
-    private FeedbackResponse immediateCorrectAnswerResponse(Question question, Map<String, Integer> answerCounts) {
+    private FeedbackResponse immediateCorrectAnswerResponse(Question question, int numberOfCorrectAnswerChoices, AnswerResponse answerResponse) {
         String result = "";
 
-        int totalCorrectChoices = answerCounts.get("correct");
-        int totalIncorrectChoices = answerCounts.get("incorrect");
+        List<Choice> correctChoices = question.getChoices().stream().filter(Choice::isCorrect).toList();
+        int totalCorrectChoices = correctChoices.size();
+        List<Choice> answerChoices = answerResponse.getAnswerChoices();
 
         if (question.getType().getType().equalsIgnoreCase("Multiple Choice") ||
                 question.getType().getType().equalsIgnoreCase("True or False")) {
-            if (totalCorrectChoices == 0) {
+            if (numberOfCorrectAnswerChoices == 0) {
                 result = "Incorrect";
             } else {
                 result = "Correct";
             }
         } else if(question.getType().getType().equalsIgnoreCase("Multiple Answer")) {
-            if (totalCorrectChoices == 0) {
+            if (numberOfCorrectAnswerChoices == 0) {
                 result = "Incorrect";
-            }  else if (totalCorrectChoices > 0 && totalIncorrectChoices > 0){
+            } else if (numberOfCorrectAnswerChoices < totalCorrectChoices || (numberOfCorrectAnswerChoices == totalCorrectChoices && answerChoices.size() > totalCorrectChoices)) {
                 result = "Partially Correct";
             } else {
                 result = "Correct";
             }
         }
+
         FeedbackResponse feedbackResponse;
         List<Choice> correctAnswer = findCorrectAnswers(question);
         String explanation = "";
@@ -143,28 +137,31 @@ public  class FeedbackServiceImplementation implements FeedbackService {
 
 
 
-    private FeedbackResponse immediateElaborated(Question question, Map<String, Integer> answerCounts) {
+    private FeedbackResponse immediateElaborated(Question question, int numberOfCorrectAnswerChoices, AnswerResponse answerResponse) {
         String result = "";
 
-        int totalCorrectChoices = answerCounts.get("correct");
-        int totalIncorrectChoices = answerCounts.get("incorrect");
+        List<Choice> correctChoices = question.getChoices().stream().filter(Choice::isCorrect).toList();
+        int totalCorrectChoices = correctChoices.size();
+        List<Choice> answerChoices = answerResponse.getAnswerChoices();
 
         if (question.getType().getType().equalsIgnoreCase("Multiple Choice") ||
                 question.getType().getType().equalsIgnoreCase("True or False")) {
-            if (totalCorrectChoices == 0) {
+            if (numberOfCorrectAnswerChoices == 0) {
                 result = "Incorrect";
             } else {
                 result = "Correct";
             }
         } else if(question.getType().getType().equalsIgnoreCase("Multiple Answer")) {
-            if (totalCorrectChoices == 0) {
+            if (numberOfCorrectAnswerChoices == 0) {
                 result = "Incorrect";
-            }  else if (totalCorrectChoices > 0 && totalIncorrectChoices > 0){
+            } else if (numberOfCorrectAnswerChoices < totalCorrectChoices || (numberOfCorrectAnswerChoices == totalCorrectChoices && answerChoices.size() > totalCorrectChoices)) {
                 result = "Partially Correct";
             } else {
                 result = "Correct";
             }
         }
+
+
         FeedbackResponse feedbackResponse;
         List<Choice> correctAnswer = findCorrectAnswers(question);
         String explanation = question.getExplanation();
