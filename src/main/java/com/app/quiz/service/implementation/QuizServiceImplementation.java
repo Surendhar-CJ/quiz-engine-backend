@@ -376,12 +376,12 @@ public class QuizServiceImplementation implements QuizService {
 
         // Count of correct choices in the current response
         int numberOfCorrectAnswerChoices = 0;
-        for(Choice correctChoice : correctChoices) {
-            for(Choice answerChoice : answerChoices) {
-                if(answerChoice == null) {
+        for (Choice correctChoice : correctChoices) {
+            for (Choice answerChoice : answerChoices) {
+                if (answerChoice == null) {
                     continue;
                 }
-                if(correctChoice.getId().equals(answerChoice.getId())) {
+                if (correctChoice.getId().equals(answerChoice.getId())) {
                     numberOfCorrectAnswerChoices++;
                 }
             }
@@ -389,6 +389,12 @@ public class QuizServiceImplementation implements QuizService {
 
         // Score for the current response
         double answerScore = ((double) numberOfCorrectAnswerChoices / correctChoices.size()) * question.getScore();
+
+        // If the user has selected more choices than correct ones, assume some are incorrect and deduct proportionately.
+        if (answerChoices.size() > correctChoices.size()) {
+            answerScore -= ((double) (answerChoices.size() - correctChoices.size()) / correctChoices.size()) * question.getScore();
+            answerScore = Math.max(0, answerScore); // Make sure the score doesn't go negative
+        }
 
         // Find the existing response for the current question
         Optional<Response> existingResponseOpt = quiz.getResponses().stream()
@@ -401,12 +407,12 @@ public class QuizServiceImplementation implements QuizService {
 
             // Count of correct choices in the existing response
             int existingNumberOfCorrectAnswerChoices = 0;
-            for(Choice correctChoice : correctChoices) {
-                for(Choice answerChoice : existingResponse.getChoices()) {
-                    if(answerChoice == null) {
+            for (Choice correctChoice : correctChoices) {
+                for (Choice answerChoice : existingResponse.getChoices()) {
+                    if (answerChoice == null) {
                         continue;
                     }
-                    if(correctChoice.getId().equals(answerChoice.getId())) {
+                    if (correctChoice.getId().equals(answerChoice.getId())) {
                         existingNumberOfCorrectAnswerChoices++;
                     }
                 }
@@ -422,6 +428,7 @@ public class QuizServiceImplementation implements QuizService {
         // Add the score for the current response to the quiz's final score
         quiz.setFinalScore(quiz.getFinalScore() + answerScore);
     }
+
 
 
 
