@@ -17,6 +17,8 @@ import com.app.quiz.utils.FeedbackResponse;
 import com.app.quiz.utils.QuizResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -396,7 +398,12 @@ public class QuizServiceImplementation implements QuizService {
         double scorePerIncorrectChoice = scorePerCorrectChoice;
 
         // Score for the current response
-        double answerScore = numberOfCorrectAnswerChoices * scorePerCorrectChoice - numberOfIncorrectAnswerChoices * scorePerIncorrectChoice;
+        double answerScore = numberOfCorrectAnswerChoices * scorePerCorrectChoice;
+
+        if(numberOfCorrectAnswerChoices == correctChoices.size() && answerChoices.size() > numberOfIncorrectAnswerChoices) {
+            answerScore = answerScore - (numberOfIncorrectAnswerChoices * scorePerIncorrectChoice);
+        }
+
         if(answerScore < 0) answerScore = 0; // Ensure the score doesn't drop below zero
 
         // Find the existing response for the current question
@@ -475,7 +482,6 @@ public class QuizServiceImplementation implements QuizService {
         }
 
         if(!quiz.getIsCompleted() || quiz.getCompletedAt() == null) {
-            System.out.println(quiz);
             throw new InvalidInputException("Quiz is not completed");
         }
 
@@ -515,6 +521,7 @@ public class QuizServiceImplementation implements QuizService {
         Double finalScore = quiz.getFinalScore() ;
         double finalPercentage = ((double) finalScore/totalNumberOfMarks) * 100;
         DecimalFormat df = new DecimalFormat("#.##");
+        df.setRoundingMode(RoundingMode.HALF_UP);
         finalPercentage = Double.valueOf(df.format(finalPercentage));
 
 
@@ -534,16 +541,12 @@ public class QuizServiceImplementation implements QuizService {
                                                 .filter(correctChoices::contains)
                                                 .count();
                                         int numberOfIncorrectChosen = chosenChoices.size() - numberOfCorrectChosen;
-                                        double questionScore = question.getScore();
-                                        if (numberOfIncorrectChosen > 0) {
-                                            // Deduct points for incorrect choices
-                                            double scorePerChoice = questionScore / correctChoices.size();
-                                            double deductedScore = numberOfIncorrectChosen * scorePerChoice;
-                                            return Math.max(questionScore - deductedScore, 0);
-                                        } else {
-                                            // If no incorrect choice is chosen, the score for this question is the question's full score
-                                            return questionScore;
-                                        }
+
+                                        double scorePerCorrectChoice = (double) question.getScore() / correctChoices.size();
+                                        double scorePerIncorrectChoice = scorePerCorrectChoice;
+
+                                        double responseScore = numberOfCorrectChosen * scorePerCorrectChoice - numberOfIncorrectChosen * scorePerIncorrectChoice;
+                                        return Math.max(responseScore, 0);
                                     })
                                     .sum();
                         })
