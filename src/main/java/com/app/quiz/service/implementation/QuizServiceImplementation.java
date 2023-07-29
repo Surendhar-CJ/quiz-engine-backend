@@ -525,12 +525,30 @@ public class QuizServiceImplementation implements QuizService {
                             List<Response> responses = quiz.getResponses();
                             return responses.stream()
                                     .filter(response -> response.getQuestion().equals(question))
-                                    .flatMap(response -> response.getChoices().stream())
-                                    .filter(choice -> choice.isCorrect())
-                                    .mapToDouble(choice -> question.getScore())
+                                    .mapToDouble(response -> {
+                                        List<Choice> chosenChoices = response.getChoices();
+                                        List<Choice> correctChoices = question.getChoices().stream()
+                                                .filter(Choice::isCorrect)
+                                                .collect(Collectors.toList());
+                                        int numberOfCorrectChosen = (int) chosenChoices.stream()
+                                                .filter(correctChoices::contains)
+                                                .count();
+                                        int numberOfIncorrectChosen = chosenChoices.size() - numberOfCorrectChosen;
+                                        double questionScore = question.getScore();
+                                        if (numberOfIncorrectChosen > 0) {
+                                            // Deduct points for incorrect choices
+                                            double scorePerChoice = questionScore / correctChoices.size();
+                                            double deductedScore = numberOfIncorrectChosen * scorePerChoice;
+                                            return Math.max(questionScore - deductedScore, 0);
+                                        } else {
+                                            // If no incorrect choice is chosen, the score for this question is the question's full score
+                                            return questionScore;
+                                        }
+                                    })
                                     .sum();
                         })
                 ));
+
 
 // Calculate total marks per subtopic
         Map<String, Double> totalMarksPerSubtopic = questionsServed.stream()
