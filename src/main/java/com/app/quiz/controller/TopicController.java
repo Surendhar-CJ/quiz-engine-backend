@@ -35,7 +35,6 @@ public class TopicController {
 
     @GetMapping("/{name}")
     public ResponseEntity<TopicDTO> getTopic(@PathVariable("name") String name) {
-        System.out.println(name);
         return new ResponseEntity<>(topicService.getTopic(name), HttpStatus.FOUND);
     }
 
