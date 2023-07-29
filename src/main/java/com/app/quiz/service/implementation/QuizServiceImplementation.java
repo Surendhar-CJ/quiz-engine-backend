@@ -17,8 +17,6 @@ import com.app.quiz.utils.FeedbackResponse;
 import com.app.quiz.utils.QuizResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-
-import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -395,12 +393,12 @@ public class QuizServiceImplementation implements QuizService {
 
         // Score for each correct and incorrect choice
         double scorePerCorrectChoice = (double) question.getScore() / correctChoices.size();
-        double scorePerIncorrectChoice = scorePerCorrectChoice;
+        double scorePerIncorrectChoice = (double) question.getScore() / question.getChoices().size();
 
         // Score for the current response
         double answerScore = numberOfCorrectAnswerChoices * scorePerCorrectChoice;
 
-        if(numberOfCorrectAnswerChoices == correctChoices.size() && answerChoices.size() > numberOfIncorrectAnswerChoices) {
+        if(numberOfCorrectAnswerChoices == correctChoices.size() && answerChoices.size() > numberOfCorrectAnswerChoices) {
             answerScore = answerScore - (numberOfIncorrectAnswerChoices * scorePerIncorrectChoice);
         }
 
@@ -431,7 +429,11 @@ public class QuizServiceImplementation implements QuizService {
             }
 
             // Score for the existing response
-            double existingAnswerScore = existingNumberOfCorrectAnswerChoices * scorePerCorrectChoice - existingNumberOfIncorrectAnswerChoices * scorePerIncorrectChoice;
+            double existingAnswerScore = existingNumberOfCorrectAnswerChoices * scorePerCorrectChoice;
+            if(existingNumberOfCorrectAnswerChoices == correctChoices.size() && existingResponse.getChoices().size() > existingNumberOfCorrectAnswerChoices) {
+                existingAnswerScore = existingAnswerScore - (existingNumberOfIncorrectAnswerChoices * scorePerIncorrectChoice);
+            }
+
             if(existingAnswerScore < 0) existingAnswerScore = 0; // Ensure the score doesn't drop below zero
 
             // Subtract the score for the existing response from the quiz's final score
@@ -519,10 +521,12 @@ public class QuizServiceImplementation implements QuizService {
                                                         .map(question -> question.getScore())
                                                         .reduce(0.0, (a, b) -> a + b);
         Double finalScore = quiz.getFinalScore() ;
-        double finalPercentage = ((double) finalScore/totalNumberOfMarks) * 100;
         DecimalFormat df = new DecimalFormat("#.##");
-        df.setRoundingMode(RoundingMode.HALF_UP);
-        finalPercentage = Double.valueOf(df.format(finalPercentage));
+        finalScore = Double.parseDouble(df.format(finalScore));
+
+        double finalPercentage = ((double) finalScore/totalNumberOfMarks) * 100;
+        DecimalFormat dfo = new DecimalFormat("#.##");
+        finalPercentage = Double.parseDouble(dfo.format(finalPercentage));
 
 
         Map<String, Double> marksScoredPerSubtopic = questionsServed.stream()
@@ -543,9 +547,16 @@ public class QuizServiceImplementation implements QuizService {
                                         int numberOfIncorrectChosen = chosenChoices.size() - numberOfCorrectChosen;
 
                                         double scorePerCorrectChoice = (double) question.getScore() / correctChoices.size();
-                                        double scorePerIncorrectChoice = scorePerCorrectChoice;
+                                        double scorePerIncorrectChoice = (double) question.getScore() / question.getChoices().size();
 
-                                        double responseScore = numberOfCorrectChosen * scorePerCorrectChoice - numberOfIncorrectChosen * scorePerIncorrectChoice;
+                                        double responseScore = numberOfCorrectChosen * scorePerCorrectChoice;
+                                        if(numberOfCorrectChosen == correctChoices.size() && chosenChoices.size() > numberOfCorrectChosen) {
+                                            responseScore = responseScore - (numberOfIncorrectChosen * scorePerIncorrectChoice);
+                                        }
+
+                                        DecimalFormat dfr = new DecimalFormat("#.##");
+                                        responseScore = Double.parseDouble(dfr.format(responseScore));
+
                                         return Math.max(responseScore, 0);
                                     })
                                     .sum();
@@ -563,10 +574,15 @@ public class QuizServiceImplementation implements QuizService {
         Map<String, Double> percentageScorePerSubtopic = new HashMap<>();
         for (String subtopic : marksScoredPerSubtopic.keySet()) {
             double marksScored = marksScoredPerSubtopic.get(subtopic);
+            DecimalFormat df1 = new DecimalFormat("#.##");
+
+            marksScored = Double.parseDouble(df1.format(marksScored));
             double totalMarks = totalMarksPerSubtopic.get(subtopic);
+
             double percentageScore = (marksScored / totalMarks) * 100;
-            DecimalFormat dfo = new DecimalFormat("#.##");
-            percentageScore = Double.valueOf(dfo.format(percentageScore));
+            DecimalFormat dfs = new DecimalFormat("#.##");
+            percentageScore = Double.valueOf(dfs.format(percentageScore));
+
             percentageScorePerSubtopic.put(subtopic, percentageScore);
         }
 
