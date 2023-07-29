@@ -12,7 +12,7 @@ public interface TopicService {
 
     List<TopicDTO> createTopic(TopicCreation topicCreation);
 
-    TopicDTO getTopic(Long topicId);
+    TopicDTO getTopic(String name);
 
     void deleteTopicById(Long topicId, Long userId);
 
