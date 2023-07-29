@@ -103,8 +103,8 @@ public class TopicServiceImplementation implements TopicService {
 
 
     @Override
-    public TopicDTO getTopic(Long topicId) {
-        Optional<Topic> existingTopic = topicRepository.findById(topicId);
+    public TopicDTO getTopic(String name) {
+        Optional<Topic> existingTopic = topicRepository.findByNameIgnoreCase(name);
 
         if(existingTopic.isEmpty()) {
             throw new ResourceNotFoundException("Topic not found");

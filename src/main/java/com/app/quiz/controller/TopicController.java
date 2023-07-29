@@ -33,9 +33,9 @@ public class TopicController {
         return new ResponseEntity<>(topicService.createTopic(topicCreation), HttpStatus.CREATED);
     }
 
-    @GetMapping("/{topicId}")
-    public ResponseEntity<TopicDTO> getTopic(@PathVariable("topicId") Long topicId) {
-        return new ResponseEntity<>(topicService.getTopic(topicId), HttpStatus.FOUND);
+    @GetMapping("/{name}")
+    public ResponseEntity<TopicDTO> getTopic(@PathVariable("name") String name) {
+        return new ResponseEntity<>(topicService.getTopic(name), HttpStatus.FOUND);
     }
 
 
