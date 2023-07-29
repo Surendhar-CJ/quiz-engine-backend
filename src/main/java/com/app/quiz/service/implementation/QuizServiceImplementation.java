@@ -376,25 +376,28 @@ public class QuizServiceImplementation implements QuizService {
 
         // Count of correct choices in the current response
         int numberOfCorrectAnswerChoices = 0;
-        for (Choice correctChoice : correctChoices) {
-            for (Choice answerChoice : answerChoices) {
-                if (answerChoice == null) {
-                    continue;
-                }
-                if (correctChoice.getId().equals(answerChoice.getId())) {
-                    numberOfCorrectAnswerChoices++;
-                }
+
+        // Count of incorrect choices in the current response
+        int numberOfIncorrectAnswerChoices = 0;
+
+        for(Choice answerChoice : answerChoices) {
+            if(answerChoice == null) {
+                continue;
+            }
+            if(correctChoices.stream().anyMatch(choice -> choice.getId().equals(answerChoice.getId()))) {
+                numberOfCorrectAnswerChoices++;
+            } else {
+                numberOfIncorrectAnswerChoices++;
             }
         }
 
-        // Score for the current response
-        double answerScore = ((double) numberOfCorrectAnswerChoices / correctChoices.size()) * question.getScore();
+        // Score for each correct and incorrect choice
+        double scorePerCorrectChoice = (double) question.getScore() / correctChoices.size();
+        double scorePerIncorrectChoice = scorePerCorrectChoice;
 
-        // If the user has selected more choices than correct ones, assume some are incorrect and deduct proportionately.
-        if (answerChoices.size() > correctChoices.size()) {
-            answerScore -= ((double) (answerChoices.size() - correctChoices.size()) / correctChoices.size()) * question.getScore();
-            answerScore = Math.max(0, answerScore); // Make sure the score doesn't go negative
-        }
+        // Score for the current response
+        double answerScore = numberOfCorrectAnswerChoices * scorePerCorrectChoice - numberOfIncorrectAnswerChoices * scorePerIncorrectChoice;
+        if(answerScore < 0) answerScore = 0; // Ensure the score doesn't drop below zero
 
         // Find the existing response for the current question
         Optional<Response> existingResponseOpt = quiz.getResponses().stream()
@@ -407,19 +410,22 @@ public class QuizServiceImplementation implements QuizService {
 
             // Count of correct choices in the existing response
             int existingNumberOfCorrectAnswerChoices = 0;
-            for (Choice correctChoice : correctChoices) {
-                for (Choice answerChoice : existingResponse.getChoices()) {
-                    if (answerChoice == null) {
-                        continue;
-                    }
-                    if (correctChoice.getId().equals(answerChoice.getId())) {
-                        existingNumberOfCorrectAnswerChoices++;
-                    }
+            int existingNumberOfIncorrectAnswerChoices = 0;
+
+            for(Choice answerChoice : existingResponse.getChoices()) {
+                if(answerChoice == null) {
+                    continue;
+                }
+                if(correctChoices.stream().anyMatch(choice -> choice.getId().equals(answerChoice.getId()))) {
+                    existingNumberOfCorrectAnswerChoices++;
+                } else {
+                    existingNumberOfIncorrectAnswerChoices++;
                 }
             }
 
             // Score for the existing response
-            double existingAnswerScore = ((double) existingNumberOfCorrectAnswerChoices / correctChoices.size()) * question.getScore();
+            double existingAnswerScore = existingNumberOfCorrectAnswerChoices * scorePerCorrectChoice - existingNumberOfIncorrectAnswerChoices * scorePerIncorrectChoice;
+            if(existingAnswerScore < 0) existingAnswerScore = 0; // Ensure the score doesn't drop below zero
 
             // Subtract the score for the existing response from the quiz's final score
             quiz.setFinalScore(quiz.getFinalScore() - existingAnswerScore);
