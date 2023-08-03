@@ -84,8 +84,4 @@ public class Quiz {
         this.responses = new ArrayList<>();
     }
 
-    public boolean quizCompleted() {
-        return this.getTopic().getQuestionsList().size() == this.getServedQuestions().size();
-    }
-
 }
