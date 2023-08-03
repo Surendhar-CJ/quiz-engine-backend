@@ -78,18 +78,23 @@ public class QuizServiceImplementation implements QuizService {
         }
         Topic topic = existingTopic.get();
 
-        if(topic.getQuestionsList().size() == 0) {
+        //Checks and omits questions with isDeleted = true
+        long nonDeletedQuestionsCount = topic.getQuestionsList().stream()
+                .filter(question -> !Boolean.TRUE.equals(question.getIsDeleted()))
+                .count();
+
+        if (nonDeletedQuestionsCount == 0) {
             throw new InvalidInputException("Topic does not have any questions");
         }
 
-        topic.setNumberOfQuestions(topic.getQuestionsList().size());
+        topic.setNumberOfQuestions((int) nonDeletedQuestionsCount);
 
         Optional<Feedback> feedback = feedbackRepository.findById(configureQuiz.getFeedbackId());
         if(feedback.isEmpty()) {
             throw new ResourceNotFoundException("Feedback with "+ configureQuiz.getFeedbackId()+" is not found");
         }
 
-        if(configureQuiz.getQuestionsLimit() != null && configureQuiz.getQuestionsLimit() > topic.getQuestionsList().size()) {
+        if(configureQuiz.getQuestionsLimit() != null && configureQuiz.getQuestionsLimit() > nonDeletedQuestionsCount) {
             throw new InvalidInputException("Requested number of questions exceed available questions for this topic");
         }
 
@@ -142,10 +147,13 @@ public class QuizServiceImplementation implements QuizService {
             // If a difficulty level is specified, only get questions with the matching difficulty level
             questions = topic.getQuestionsList().stream()
                     .filter(question -> question.getDifficultyLevel().getLevel().equalsIgnoreCase(quiz.getDifficultyLevel().getLevel()))
+                    .filter(question -> !Boolean.TRUE.equals(question.getIsDeleted())) // Exclude soft-deleted questions
                     .collect(Collectors.toList());
         } else {
             // No difficulty level specified, get all questions
-            questions = topic.getQuestionsList();
+            questions = topic.getQuestionsList().stream()
+                    .filter(question -> !Boolean.TRUE.equals(question.getIsDeleted())) // Exclude soft-deleted questions
+                    .collect(Collectors.toList());
         }
 
         if (questions.isEmpty()) {
@@ -157,7 +165,11 @@ public class QuizServiceImplementation implements QuizService {
         quiz.getServedQuestions().add(question);
 
         // Check if all questions have been served, and if so, mark the quiz as completed -> QuestionLimit 1.
-        Integer effectiveQuestionLimit = quiz.getQuestionsLimit() != null ? quiz.getQuestionsLimit() : quiz.getTopic().getQuestionsList().size();
+        Integer effectiveQuestionLimit = quiz.getQuestionsLimit() != null
+                ? quiz.getQuestionsLimit()
+                : (int) topic.getQuestionsList().stream()
+                .filter(question1 -> (!question1.getIsDeleted()))
+                .count();
         if (quiz.getServedQuestions().size() >= effectiveQuestionLimit) {
             quiz.setIsCompleted(true);
         }
@@ -217,11 +229,16 @@ public class QuizServiceImplementation implements QuizService {
         Integer effectiveQuestionLimit = quiz.getQuestionsLimit();
         if (quiz.getDifficultyLevel() != null) {
             long questionsOfDifficulty = quiz.getTopic().getQuestionsList().stream()
+                    .filter(q -> !q.getIsDeleted())
                     .filter(q -> q.getDifficultyLevel().equals(quiz.getDifficultyLevel()))
                     .count();
             effectiveQuestionLimit = effectiveQuestionLimit != null ? Math.min(effectiveQuestionLimit, (int)questionsOfDifficulty) : (int)questionsOfDifficulty;
         } else {
-            effectiveQuestionLimit = effectiveQuestionLimit != null ? effectiveQuestionLimit : quiz.getTopic().getQuestionsList().size();
+            effectiveQuestionLimit = effectiveQuestionLimit != null
+                    ? effectiveQuestionLimit
+                    : (int) quiz.getTopic().getQuestionsList().stream()
+                    .filter(q -> !q.getIsDeleted())
+                    .count();
         }
 
         if (quiz.getServedQuestions().size() >= effectiveQuestionLimit) {
@@ -240,20 +257,26 @@ public class QuizServiceImplementation implements QuizService {
 
 
     private Question nextRegularQuestion(Quiz quiz) {
-        Integer effectiveQuestionLimit = quiz.getQuestionsLimit() != null ? quiz.getQuestionsLimit() : quiz.getTopic().getQuestionsList().size();
+
+        Integer effectiveQuestionLimit = quiz.getQuestionsLimit() != null
+                ? quiz.getQuestionsLimit()
+                : (int) quiz.getTopic().getQuestionsList().stream().filter(question -> !question.getIsDeleted()).count();
+
         if (quiz.getServedQuestions().size() >= effectiveQuestionLimit) {
             throw new ResourceNotFoundException("Questions limit reached");
         }
         Topic topic = quiz.getTopic();
         List<Question> servedQuestions = quiz.getServedQuestions();
-        List<Question> questionsList = topic.getQuestionsList();
+        List<Question> questionsList = topic.getQuestionsList().stream()
+                .filter(question -> !question.getIsDeleted()) // Exclude deleted questions
+                .toList();
         List<Question> remainingQuestions;
 
         // If a difficulty level is specified, only get questions with the matching difficulty level
-        if(quiz.getDifficultyLevel() != null) {
+        if (quiz.getDifficultyLevel() != null) {
             remainingQuestions = questionsList.stream()
                     .filter(question -> !servedQuestions.contains(question))
-                    .filter(question -> question.getDifficultyLevel().getLevel().equalsIgnoreCase(quiz.getDifficultyLevel().getLevel()))
+                    .filter(question -> quiz.getDifficultyLevel() == null || question.getDifficultyLevel().getLevel().equalsIgnoreCase(quiz.getDifficultyLevel().getLevel()))
                     .collect(Collectors.toList());
 
             if (remainingQuestions.isEmpty()) {
@@ -460,6 +483,8 @@ public class QuizServiceImplementation implements QuizService {
         }
 
         if(!quiz.getIsCompleted()) {
+            System.out.println(quiz.getServedQuestions().size());
+            System.out.println();
             throw new InvalidCredentialsException("Quiz is not completed");
         }
 

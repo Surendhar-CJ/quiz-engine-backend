@@ -35,21 +35,27 @@ public class TopicServiceImplementation implements TopicService {
     public List<TopicDTO> topics() {
         List<Topic> topics = topicRepository.findAll();
         List<TopicDTO> topicDTOs = new ArrayList<>();
-        // Initialize Map to store counts of different difficulty levels
-        Map<String, Integer> difficultyCount = new HashMap<>();
 
         // Iterate over each topic
         for (Topic topic : topics) {
-            // Reset counts for each new topic
+            // Initialize Map to store counts of different difficulty levels
+            Map<String, Integer> difficultyCount = new HashMap<>();
             difficultyCount.put("easy", 0);
             difficultyCount.put("medium", 0);
             difficultyCount.put("hard", 0);
 
+            // Counter for non-deleted questions
+            int nonDeletedQuestions = 0;
+
             // Iterate over each question for this topic
             for (Question question : topic.getQuestionsList()) {
+                if (question.getIsDeleted() == null || question.getIsDeleted()) {
+                    continue; // Skip the deleted questions
+                }
                 String difficulty = question.getDifficultyLevel().getLevel().toLowerCase();
                 // Increment the count for the corresponding difficulty level
                 difficultyCount.put(difficulty, difficultyCount.getOrDefault(difficulty, 0) + 1);
+                nonDeletedQuestions++; // Increment the count for non-deleted questions
             }
 
             Integer numberOfUsersRated = ratingRepository.countByTopicId(topic.getId());
@@ -59,10 +65,10 @@ public class TopicServiceImplementation implements TopicService {
             TopicDTO topicDTO = new TopicDTO(
                     topic.getId(),
                     topic.getName(),
-                    topic.getUser().getFirstName()+" "+topic.getUser().getLastName(),
+                    topic.getUser().getFirstName() + " " + topic.getUser().getLastName(),
                     Double.parseDouble(String.format("%.1f", topic.getRating())), // Format the rating,
                     numberOfUsersRated,
-                    topic.getQuestionsList().size(),
+                    nonDeletedQuestions, // Use non-deleted questions count
                     difficultyCount.get("easy"),
                     difficultyCount.get("medium"),
                     difficultyCount.get("hard"),
@@ -117,11 +123,18 @@ public class TopicServiceImplementation implements TopicService {
         difficultyCount.put("medium", 0);
         difficultyCount.put("hard", 0);
 
+        // Counter for non-deleted questions
+        int nonDeletedQuestions = 0;
+
         // Iterate over each question for this topic
         for (Question question : topic.getQuestionsList()) {
+            if (question.getIsDeleted() == null || question.getIsDeleted()) {
+                continue; // Skip the deleted questions
+            }
             String difficulty = question.getDifficultyLevel().getLevel().toLowerCase();
             // Increment the count for the corresponding difficulty level
             difficultyCount.put(difficulty, difficultyCount.getOrDefault(difficulty, 0) + 1);
+            nonDeletedQuestions++; // Increment the count for non-deleted questions
         }
 
         Integer numberOfUsersRated = ratingRepository.countByTopicId(topic.getId());
@@ -134,7 +147,7 @@ public class TopicServiceImplementation implements TopicService {
                 topic.getUser().getFirstName() + " " + topic.getUser().getLastName(),
                 Double.parseDouble(String.format("%.1f", topic.getRating())), // Format the rating,
                 numberOfUsersRated,
-                topic.getQuestionsList().size(),
+                nonDeletedQuestions,
                 difficultyCount.get("easy"),
                 difficultyCount.get("medium"),
                 difficultyCount.get("hard"),

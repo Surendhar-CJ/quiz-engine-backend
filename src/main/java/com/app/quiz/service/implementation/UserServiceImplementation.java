@@ -90,9 +90,15 @@ public class UserServiceImplementation implements UserService {
         Long userId = user.getId();
         List<Question> questionsCreatedByUser = questionRepository.findByUserId(userId);
 
-        List<UserQuestionDTO> questionsCreated = questionsCreatedByUser.stream().map(question ->
-                        new UserQuestionDTO(question.getId(), question.getTopic().getName(), question.getText(), question.getChoices(), question.getExplanation()))
-                                            .toList();
+        List<UserQuestionDTO> questionsCreated = questionsCreatedByUser.stream()
+                .filter(question -> !question.getIsDeleted())
+                .map(question -> new UserQuestionDTO(
+                        question.getId(),
+                        question.getTopic().getName(),
+                        question.getText(),
+                        question.getChoices(),
+                        question.getExplanation()))
+                .collect(Collectors.toList());
 
         List<UserFeedback> feedbacks = userFeedbackRepository.findByFeedbackForUserId(userId);
 

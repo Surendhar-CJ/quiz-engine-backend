@@ -186,6 +186,9 @@ public class QuestionServiceImplementation implements QuestionService {
         if(questionType.getType().equalsIgnoreCase("Multiple Answer") && correctAnswerCount < 2) {
             throw new InvalidInputException("Multiple Answer Questions must have at least two correct answers");
         }
+
+        newQuestion.setIsDeleted(false);
+
         Question question = questionRepository.save(newQuestion);
 
         return questionDTOMapper.apply(question);
@@ -211,7 +214,8 @@ public class QuestionServiceImplementation implements QuestionService {
             throw new ResourceNotFoundException("Question not found");
         }
 
-        questionRepository.delete(question);
+        question.setIsDeleted(true);
+        questionRepository.save(question);
 
     }
 }

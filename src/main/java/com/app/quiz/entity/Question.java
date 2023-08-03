@@ -53,6 +53,9 @@ public class Question {
     @ToString.Exclude
     private User user;
 
+    @Column(name="is_deleted")
+    private Boolean isDeleted;
+
     public Question(String text, QuestionType type, Double score, Topic topic, Subtopic subtopic, DifficultyLevel difficultyLevel, List<Choice> choices, User user) {
         this.text = text;
         this.type = type;
@@ -62,6 +65,7 @@ public class Question {
         this.difficultyLevel = difficultyLevel;
         this.choices = new ArrayList<>();
         this.user = user;
+        this.isDeleted = false;
     }
 
     public Question() {
