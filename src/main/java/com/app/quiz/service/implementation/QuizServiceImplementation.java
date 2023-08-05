@@ -483,8 +483,6 @@ public class QuizServiceImplementation implements QuizService {
         }
 
         if(!quiz.getIsCompleted()) {
-            System.out.println(quiz.getServedQuestions().size());
-            System.out.println();
             throw new InvalidCredentialsException("Quiz is not completed");
         }
 
