@@ -3,6 +3,7 @@ package com.app.quiz.service.implementation;
 import com.app.quiz.dto.TopicDTO;
 import com.app.quiz.entity.*;
 import com.app.quiz.exception.custom.InvalidInputException;
+import com.app.quiz.exception.custom.ResourceExistsException;
 import com.app.quiz.exception.custom.ResourceNotFoundException;
 import com.app.quiz.repository.RatingRepository;
 import com.app.quiz.repository.SubtopicRepository;
@@ -89,6 +90,12 @@ public class TopicServiceImplementation implements TopicService {
 
         String name = topicCreation.getTopicName();
         Long userId = topicCreation.getUserId();
+
+        Optional<Topic> existingTopic = topicRepository.findByNameIgnoreCase(name);
+
+        if(existingTopic.isPresent()) {
+            throw new ResourceExistsException("Topic exists already");
+        }
 
         Optional<User> user = userRepository.findById(userId);
 
