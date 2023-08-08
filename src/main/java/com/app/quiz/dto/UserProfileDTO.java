@@ -5,7 +5,7 @@ import com.app.quiz.utils.QuizResult;
 import java.util.List;
 import java.util.Map;
 
-public record UserQuizDTO (
+public record UserProfileDTO (
     Long userId,
     String firstName,
     String lastName,

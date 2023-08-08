@@ -59,7 +59,7 @@ public class UserServiceImplementation implements UserService {
 
 
     @Override
-    public UserQuizDTO getUserById(Long id) {
+    public UserProfileDTO getUserById(Long id) {
         Optional<User> existingUser = userRepository.findById(id);
 
         User user;
@@ -118,7 +118,7 @@ public class UserServiceImplementation implements UserService {
         Map<Long, Double> averageScoreByTopic = averagePercentageByTopic(user);
         Map<Long, Double> averageScoreByOtherUsersPerTopic = averagePercentageByOtherUsersPerTopic(user.getId());
 
-        return new UserQuizDTO(
+        return new UserProfileDTO(
                 user.getId(),
                 user.getFirstName(),
                 user.getLastName(),
