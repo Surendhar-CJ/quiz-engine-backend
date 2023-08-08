@@ -181,7 +181,7 @@ public class QuestionServiceImplementation implements QuestionService {
         }
 
         if(questionType.getType().equalsIgnoreCase("Multiple Answer") && questionAddition.getChoices().size() <= 2) {
-            throw new InvalidInputException("Multiple Choice Questions must have at least three choices");
+            throw new InvalidInputException("Multiple Answer Questions must have at least three choices");
         }
         if(questionType.getType().equalsIgnoreCase("Multiple Answer") && correctAnswerCount < 2) {
             throw new InvalidInputException("Multiple Answer Questions must have at least two correct answers");

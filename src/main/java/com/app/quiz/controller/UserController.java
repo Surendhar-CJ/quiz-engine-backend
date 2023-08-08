@@ -3,7 +3,7 @@ package com.app.quiz.controller;
 import com.app.quiz.config.jwt.JWTService;
 import com.app.quiz.config.jwt.TokenBlacklist;
 import com.app.quiz.dto.UserDTO;
-import com.app.quiz.dto.UserQuizDTO;
+import com.app.quiz.dto.UserProfileDTO;
 import com.app.quiz.entity.UserFeedback;
 import com.app.quiz.requestBody.UserLogin;
 import com.app.quiz.requestBody.UserSignUp;
@@ -41,8 +41,8 @@ public class UserController {
     }
 
     @GetMapping("/users/{userId}")
-    public ResponseEntity<UserQuizDTO> getUser(@PathVariable("userId") Long userId) {
-        UserQuizDTO user = userService.getUserById(userId);
+    public ResponseEntity<UserProfileDTO> getUser(@PathVariable("userId") Long userId) {
+        UserProfileDTO user = userService.getUserById(userId);
         return new ResponseEntity<>(user, HttpStatus.FOUND);
     }
 
