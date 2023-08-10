@@ -1,8 +1,5 @@
 package com.app.quiz.dto;
 
-import com.app.quiz.entity.Quiz;
-
-import java.util.List;
 
 public record UserDTO (
 
