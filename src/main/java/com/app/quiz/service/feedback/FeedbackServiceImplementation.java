@@ -2,6 +2,7 @@ package com.app.quiz.service.feedback;
 
 
 import com.app.quiz.entity.*;
+import com.app.quiz.exception.custom.InvalidInputException;
 import com.app.quiz.exception.custom.ResourceNotFoundException;
 import com.app.quiz.repository.*;
 import com.app.quiz.requestBody.AnswerResponse;
@@ -39,11 +40,11 @@ public  class FeedbackServiceImplementation implements FeedbackService {
         String feedbackType = quiz.getFeedbackType().getType();
 
         if ("Instant Feedback".equalsIgnoreCase(feedbackType)) {
-            feedbackResponse = immediateResponse(question, numberOfCorrectAnswerChoices, answerResponse);
+            feedbackResponse = instantFeedback(question, numberOfCorrectAnswerChoices, answerResponse);
         } else if ("Instant Correct Answer Feedback".equalsIgnoreCase(feedbackType)) {
-            feedbackResponse = immediateCorrectAnswerResponse(question, numberOfCorrectAnswerChoices, answerResponse);
+            feedbackResponse = instantCorrectAnswerFeedback(question, numberOfCorrectAnswerChoices, answerResponse);
         } else if ("Instant Detailed Feedback".equalsIgnoreCase(feedbackType)) {
-            feedbackResponse = immediateElaborated(question, numberOfCorrectAnswerChoices, answerResponse);
+            feedbackResponse = instantDetailedFeedback(question, numberOfCorrectAnswerChoices, answerResponse);
         }
 
         return feedbackResponse;
@@ -61,22 +62,22 @@ public  class FeedbackServiceImplementation implements FeedbackService {
 
     @Override
     public String overallFeedback(Double percentage) {
-        FeedbackContent feedback = feedbackContentRepository.findTopByMinScoreLessThanEqualAndMaxScoreGreaterThanEqual(percentage, percentage);
+        FeedbackContent feedback = feedbackContentRepository.findByScoreRange(percentage, percentage);
         if(feedback != null) {
             return feedback.getOverallFeedback();
         }
-        return "There appears to be an error with the score calculation. The score percentage falls outside of the expected range. Kindly verify the results.";
+        throw new ResourceNotFoundException("The score percentage falls outside of the expected range. Kindly verify the results.");
     }
 
 
 
     @Override
     public String subtopicFeedback(Double percentage, String subtopic) {
-        FeedbackContent feedback = feedbackContentRepository.findTopByMinScoreLessThanEqualAndMaxScoreGreaterThanEqual(percentage, percentage);
+        FeedbackContent feedback = feedbackContentRepository.findByScoreRange(percentage, percentage);
         if(feedback != null) {
             return feedback.getSubtopicFeedback().replace("{subtopic}", subtopic);
         }
-        return "An error has occurred as the score percentage falls outside of the expected range. Please verify the results.";
+        throw new ResourceNotFoundException("The score percentage falls outside of the expected range. Kindly verify the results.");
     }
 
 
@@ -132,7 +133,7 @@ public  class FeedbackServiceImplementation implements FeedbackService {
 
 
 
-    private FeedbackResponse immediateResponse(Question question, int numberOfCorrectAnswerChoices, AnswerResponse answerResponse) {
+    private FeedbackResponse instantFeedback(Question question, int numberOfCorrectAnswerChoices, AnswerResponse answerResponse) {
         String result = getResult(question, numberOfCorrectAnswerChoices, answerResponse);
         FeedbackResponse feedbackResponse;
         List<Choice> correctAnswer = null;
@@ -146,7 +147,7 @@ public  class FeedbackServiceImplementation implements FeedbackService {
 
 
 
-    private FeedbackResponse immediateCorrectAnswerResponse(Question question, int numberOfCorrectAnswerChoices, AnswerResponse answerResponse) {
+    private FeedbackResponse instantCorrectAnswerFeedback(Question question, int numberOfCorrectAnswerChoices, AnswerResponse answerResponse) {
         String result = getResult(question, numberOfCorrectAnswerChoices, answerResponse);
         FeedbackResponse feedbackResponse;
         List<Choice> correctAnswer = findCorrectAnswers(question);
@@ -159,7 +160,7 @@ public  class FeedbackServiceImplementation implements FeedbackService {
 
 
 
-    private FeedbackResponse immediateElaborated(Question question, int numberOfCorrectAnswerChoices, AnswerResponse answerResponse) {
+    private FeedbackResponse instantDetailedFeedback(Question question, int numberOfCorrectAnswerChoices, AnswerResponse answerResponse) {
 
         String result = getResult(question, numberOfCorrectAnswerChoices, answerResponse);
         FeedbackResponse feedbackResponse;
