@@ -524,7 +524,7 @@ public class QuizServiceImplementation implements QuizService {
         Optional<Rating> userRating = ratingRepository.findByUserIdAndTopicId(userId, quiz.getTopic().getId());
         boolean isRated = userRating.isPresent();
 
-
+        //Constructing QuizResult object
         QuizResult quizResult = new QuizResult(quiz.getId(),
                                                userId,
                                                quiz.getTopic(),
@@ -691,18 +691,18 @@ public class QuizServiceImplementation implements QuizService {
     }
 
 
-    private String getFeedbackBySubtopic(Map<String, Double> percentageScores) {
-        String feedbackBySubTopic="";
+    private String getFeedbackBySubtopic(Map<String, Double> percentageScorePerSubtopic) {
+        StringBuilder feedbackBySubTopic= new StringBuilder();
         // Add feedback for each subtopic (excluding "General")
-        for (Map.Entry<String, Double> entry : percentageScores.entrySet()) {
+        for (Map.Entry<String, Double> entry : percentageScorePerSubtopic.entrySet()) {
             String subtopic = entry.getKey();
             Double percentage = entry.getValue();
 
             if (!subtopic.equals("General")) {  // Skip the "General" subtopic
-                feedbackBySubTopic += feedbackService.subtopicFeedback(percentage, subtopic)+" ";
+                feedbackBySubTopic.append(feedbackService.subtopicFeedback(percentage, subtopic)).append(" ");
             }
         }
-        return feedbackBySubTopic;
+        return feedbackBySubTopic.toString();
     }
 
 
