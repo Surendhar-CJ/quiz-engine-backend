@@ -625,33 +625,38 @@ public class QuizServiceImplementation implements QuizService {
                             List<Response> responses = quiz.getResponses();
                             return responses.stream()
                                     .filter(response -> response.getQuestion().equals(question))
-                                    .mapToDouble(response -> {
-                                        List<Choice> chosenChoices = response.getChoices();
-                                        List<Choice> correctChoices = question.getChoices().stream()
-                                                .filter(Choice::isCorrect)
-                                                .collect(Collectors.toList());
-                                        int numberOfCorrectChosen = (int) chosenChoices.stream()
-                                                .filter(correctChoices::contains)
-                                                .count();
-                                        int numberOfIncorrectChosen = chosenChoices.size() - numberOfCorrectChosen;
-
-                                        double scorePerCorrectChoice = question.getScore() / (double) correctChoices.size();
-                                        double scorePerIncorrectChoice = question.getScore() / (double) question.getChoices().size();
-
-                                        double responseScore = numberOfCorrectChosen * scorePerCorrectChoice;
-                                        if(numberOfCorrectChosen == correctChoices.size() && chosenChoices.size() > numberOfCorrectChosen) {
-                                            responseScore = responseScore - (numberOfIncorrectChosen * scorePerIncorrectChoice);
-                                        }
-
-                                        DecimalFormat dfr = new DecimalFormat("#.##");
-                                        responseScore = Double.parseDouble(dfr.format(responseScore));
-
-                                        return Math.max(responseScore, 0);
-                                    })
+                                    .mapToDouble(response -> calculateScoreForResponse(question, response))
                                     .sum();
                         })
                 ));
     }
+
+    private double calculateScoreForResponse(Question question, Response response) {
+        List<Choice> chosenChoices = response.getChoices();
+        List<Choice> correctChoices = question.getChoices().stream()
+                .filter(Choice::isCorrect)
+                .collect(Collectors.toList());
+
+        int numberOfCorrectChosen = (int) chosenChoices.stream()
+                .filter(correctChoices::contains)
+                .count();
+
+        int numberOfIncorrectChosen = chosenChoices.size() - numberOfCorrectChosen;
+
+        double scorePerCorrectChoice = question.getScore() / (double) correctChoices.size();
+        double scorePerIncorrectChoice = question.getScore() / (double) question.getChoices().size();
+
+        double responseScore = numberOfCorrectChosen * scorePerCorrectChoice;
+        if (numberOfCorrectChosen == correctChoices.size() && chosenChoices.size() > numberOfCorrectChosen) {
+            responseScore = responseScore - (numberOfIncorrectChosen * scorePerIncorrectChoice);
+        }
+
+        DecimalFormat dfr = new DecimalFormat("#.##");
+        responseScore = Double.parseDouble(dfr.format(responseScore));
+
+        return Math.max(responseScore, 0);
+    }
+
 
     private Map<String, Double> getTotalMarksPerSubtopic(List<Question> questions) {
         return questions.stream()
