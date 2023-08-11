@@ -384,9 +384,6 @@ public class QuizServiceImplementation implements QuizService {
     }
 
 
-
-
-
     private void grading(Quiz quiz, Question question, AnswerResponse answerResponse) {
         // List of answer choices from the current response
         List<Choice> answerChoices = answerResponse.getAnswerChoices();
