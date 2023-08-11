@@ -197,7 +197,7 @@ public class QuizServiceImplementation implements QuizService {
         int receivedSequence = answerResponse.getSequenceNumber();
         Question receivedQuestion = quiz.getServedQuestions().get(receivedSequence);
 
-        //To validate if the answer response contains the correct last question
+        //To validate if the answer response contains the correct last served question
         if (!receivedQuestion.equals(questionRepository.findById(answerResponse.getQuestionId()).orElseThrow(
                 () -> new ResourceNotFoundException("Question with id "+answerResponse.getQuestionId()+" is not found")))) {
             throw new InvalidInputException("Invalid question received as response");
@@ -367,18 +367,17 @@ public class QuizServiceImplementation implements QuizService {
 
 
 
-    private void answerValidation(AnswerResponse answerResponse, Question lastQuestion) {
-        // Check if last question was answered correctly
+    private void answerValidation(AnswerResponse answerResponse, Question question) {
         List<Choice> answerChoices = answerResponse.getAnswerChoices();
 
-        // Convert the last question's choice IDs to a set for faster lookups
-        Set<Long> lastQuestionChoiceIds = lastQuestion.getChoices().stream()
+        // Convert the question's choice IDs to a set for faster lookups
+        Set<Long> questionChoiceIds = question.getChoices().stream()
                 .map(Choice::getId)
                 .collect(Collectors.toSet());
 
         for (Choice choice : answerChoices) {
-            // Check if the choice ID is valid for the last question
-            if (choice != null && !lastQuestionChoiceIds.contains(choice.getId())) {
+            // Check if the choice ID is valid for the question
+            if (choice != null && !questionChoiceIds.contains(choice.getId())) {
                 throw new InvalidInputException("Invalid choice id for the given question");
             }
         }
