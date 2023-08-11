@@ -496,134 +496,32 @@ public class QuizServiceImplementation implements QuizService {
 
     @Override
     public QuizResult getQuizResult(Long quizId) {
-        Optional<Quiz> existingQuiz = quizRepository.findById(quizId);
 
-        Quiz quiz;
-        if(existingQuiz.isEmpty()) {
-            throw new ResourceNotFoundException("Quiz with "+quizId+" is not found");
-        } else {
-            quiz = existingQuiz.get();
-        }
-
-        if(!quiz.getIsCompleted() || quiz.getCompletedAt() == null) {
-            throw new InvalidInputException("Quiz is not completed");
-        }
-
+        Quiz quiz = fetchQuiz(quizId);
         Long userId = quiz.getUser().getId();
-
 
         List<Question> questionsServed = quiz.getServedQuestions();
         List<QuestionDTO> questionsServedDTOs = questionsServed.stream().map(questionDTOMapper).toList();
 
-        Map<Long, List<Choice>> userAnswerChoices = new HashMap<>();
-        Map<Long, List<Choice>> correctAnswerChoices = new HashMap<>();
-        Map<Long, String> answerExplanation = new HashMap<>();
+        Map<Long, List<Choice>> userAnswerChoices = getUserAnswerChoices(quiz, questionsServed);
+        Map<Long, List<Choice>> correctAnswerChoices = getCorrectAnswerChoices(questionsServed);
+        Map<Long, String> answerExplanation = getAnswerExplanation(questionsServed);
 
+        Integer totalNoOfQuestions = questionsServed.size();
+        Double totalNumberOfMarks = getTotalMarks(questionsServed);
+        Double finalScore = formatDouble(quiz.getFinalScore());
+        double finalPercentage = formatDouble((finalScore / totalNumberOfMarks) * 100);
 
-        for(Question question : questionsServed) {
-            List<Response> responses = quiz.getResponses();
-            userAnswerChoices.put(question.getId(), responses.stream()
-                    .filter(response -> response.getQuestion().equals(question))
-                    .flatMap(response -> response.getChoices().stream()) // flatMap to flatten the lists of choices
-                    .collect(Collectors.toList())); // collect to get a list
-        }
-
-
-        for(Question question : questionsServed) {
-            List<Choice> correct = question.getChoices().stream().filter(choice -> choice.isCorrect()).toList();
-            correctAnswerChoices.put(question.getId(), correct);
-        }
-
-        for(Question question : questionsServed) {
-            answerExplanation.put(question.getId(), question.getExplanation());
-        }
-
-        Integer totalNoOfQuestions = quiz.getServedQuestions().size();
-        Double totalNumberOfMarks = quiz.getServedQuestions().stream()
-                                                        .map(question -> question.getScore())
-                                                        .reduce(0.0, (a, b) -> a + b);
-        Double finalScore = quiz.getFinalScore() ;
-        DecimalFormat df = new DecimalFormat("#.##");
-        finalScore = Double.parseDouble(df.format(finalScore));
-
-        double finalPercentage = ((double) finalScore/totalNumberOfMarks) * 100;
-        DecimalFormat dfo = new DecimalFormat("#.##");
-        finalPercentage = Double.parseDouble(dfo.format(finalPercentage));
-
-
-        Map<String, Double> marksScoredPerSubtopic = questionsServed.stream()
-                .collect(Collectors.groupingBy(
-                        question -> question.getSubtopic().getName(),  // Group by subtopic name
-                        Collectors.summingDouble(question -> {  // Sum the scores of answered questions
-                            List<Response> responses = quiz.getResponses();
-                            return responses.stream()
-                                    .filter(response -> response.getQuestion().equals(question))
-                                    .mapToDouble(response -> {
-                                        List<Choice> chosenChoices = response.getChoices();
-                                        List<Choice> correctChoices = question.getChoices().stream()
-                                                .filter(Choice::isCorrect)
-                                                .collect(Collectors.toList());
-                                        int numberOfCorrectChosen = (int) chosenChoices.stream()
-                                                .filter(correctChoices::contains)
-                                                .count();
-                                        int numberOfIncorrectChosen = chosenChoices.size() - numberOfCorrectChosen;
-
-                                        double scorePerCorrectChoice = (double) question.getScore() / correctChoices.size();
-                                        double scorePerIncorrectChoice = (double) question.getScore() / question.getChoices().size();
-
-                                        double responseScore = numberOfCorrectChosen * scorePerCorrectChoice;
-                                        if(numberOfCorrectChosen == correctChoices.size() && chosenChoices.size() > numberOfCorrectChosen) {
-                                            responseScore = responseScore - (numberOfIncorrectChosen * scorePerIncorrectChoice);
-                                        }
-
-                                        DecimalFormat dfr = new DecimalFormat("#.##");
-                                        responseScore = Double.parseDouble(dfr.format(responseScore));
-
-                                        return Math.max(responseScore, 0);
-                                    })
-                                    .sum();
-                        })
-                ));
-
-
-// Calculate total marks per subtopic
-        Map<String, Double> totalMarksPerSubtopic = questionsServed.stream()
-                .collect(Collectors.groupingBy(
-                        question -> question.getSubtopic().getName(),  // Group by subtopic name
-                        Collectors.summingDouble(question -> question.getScore())  // Sum the scores of all questions
-                ));
-
-        Map<String, Double> percentageScorePerSubtopic = new HashMap<>();
-        for (String subtopic : marksScoredPerSubtopic.keySet()) {
-            double marksScored = marksScoredPerSubtopic.get(subtopic);
-            DecimalFormat df1 = new DecimalFormat("#.##");
-
-            marksScored = Double.parseDouble(df1.format(marksScored));
-            double totalMarks = totalMarksPerSubtopic.get(subtopic);
-
-            double percentageScore = (marksScored / totalMarks) * 100;
-            DecimalFormat dfs = new DecimalFormat("#.##");
-            percentageScore = Double.valueOf(dfs.format(percentageScore));
-
-            percentageScorePerSubtopic.put(subtopic, percentageScore);
-        }
+        Map<String, Double> marksScoredPerSubtopic = getMarksScoredPerSubtopic(quiz, questionsServed);
+        Map<String, Double> totalMarksPerSubtopic = getTotalMarksPerSubtopic(questionsServed);
+        Map<String, Double> percentageScorePerSubtopic = getPercentageScorePerSubtopic(marksScoredPerSubtopic, totalMarksPerSubtopic);
 
         // Start the feedback with the overall feedback
         String overallFeedback = feedbackService.overallFeedback(finalPercentage);
 
-        String feedbackBySubTopic="";
-        // Then add feedback for each subtopic (excluding "General")
-        for (Map.Entry<String, Double> entry : percentageScorePerSubtopic.entrySet()) {
-            String subtopic = entry.getKey();
-            Double percentage = entry.getValue();
+        String feedbackBySubTopic = getFeedbackBySubtopic(percentageScorePerSubtopic);
 
-            if (!subtopic.equals("General")) {  // Skip the "General" subtopic
-                feedbackBySubTopic += feedbackService.subtopicFeedback(percentage, subtopic)+" ";
-            }
-
-        }
-
-         Optional<Rating> userRating = ratingRepository.findByUserIdAndTopicId(userId, quiz.getTopic().getId());
+        Optional<Rating> userRating = ratingRepository.findByUserIdAndTopicId(userId, quiz.getTopic().getId());
         boolean isRated = userRating.isPresent();
 
 
@@ -655,6 +553,152 @@ public class QuizServiceImplementation implements QuizService {
         return quizResult;
     }
 
+
+    private Quiz fetchQuiz(Long quizId) {
+        Optional<Quiz> existingQuiz = quizRepository.findById(quizId);
+        if(existingQuiz.isEmpty()) {
+            throw new ResourceNotFoundException("Quiz with "+quizId+" is not found");
+        }
+        Quiz quiz = existingQuiz.get();
+        if(!quiz.getIsCompleted() || quiz.getCompletedAt() == null) {
+            throw new InvalidInputException("Quiz is not completed");
+        }
+        return quiz;
+    }
+
+
+    private Map<Long, List<Choice>> getUserAnswerChoices(Quiz quiz, List<Question> questions) {
+        Map<Long, List<Choice>> userAnswerChoices = new HashMap<>();
+
+        for(Question question : questions) {
+            List<Response> responses = quiz.getResponses();
+            userAnswerChoices.put(question.getId(), responses.stream()
+                    .filter(response -> response.getQuestion().equals(question))
+                    .flatMap(response -> response.getChoices().stream()) // flatMap to flatten the lists of choices
+                    .collect(Collectors.toList())); // collect to get a list
+        }
+
+        return userAnswerChoices;
+    }
+
+    private Map<Long, List<Choice>> getCorrectAnswerChoices(List<Question> questions) {
+        Map<Long, List<Choice>> correctAnswerChoices = new HashMap<>();
+
+        for(Question question : questions) {
+            List<Choice> correct = question.getChoices().stream()
+                    .filter(Choice::isCorrect)
+                    .toList();
+            correctAnswerChoices.put(question.getId(), correct);
+        }
+
+        return correctAnswerChoices;
+    }
+
+    private Map<Long, String> getAnswerExplanation(List<Question> questions) {
+        Map<Long, String> answerExplanation = new HashMap<>();
+
+        for(Question question : questions) {
+            answerExplanation.put(question.getId(), question.getExplanation());
+        }
+
+        return answerExplanation;
+    }
+
+
+    private Double getTotalMarks(List<Question> questions) {
+        return questions.stream()
+                .mapToDouble(Question::getScore)
+                .sum();
+    }
+
+
+    private double formatDouble(Double value) {
+        DecimalFormat df = new DecimalFormat("#.##");
+        return Double.parseDouble(df.format(value));
+    }
+
+    private Map<String, Double> getMarksScoredPerSubtopic(Quiz quiz, List<Question> questions) {
+        return questions.stream()
+                .collect(Collectors.groupingBy(
+                        question -> question.getSubtopic().getName(),  // Group by subtopic name
+                        Collectors.summingDouble(question -> {  // Sum the scores of answered questions
+                            List<Response> responses = quiz.getResponses();
+                            return responses.stream()
+                                    .filter(response -> response.getQuestion().equals(question))
+                                    .mapToDouble(response -> {
+                                        List<Choice> chosenChoices = response.getChoices();
+                                        List<Choice> correctChoices = question.getChoices().stream()
+                                                .filter(Choice::isCorrect)
+                                                .collect(Collectors.toList());
+                                        int numberOfCorrectChosen = (int) chosenChoices.stream()
+                                                .filter(correctChoices::contains)
+                                                .count();
+                                        int numberOfIncorrectChosen = chosenChoices.size() - numberOfCorrectChosen;
+
+                                        double scorePerCorrectChoice = question.getScore() / (double) correctChoices.size();
+                                        double scorePerIncorrectChoice = question.getScore() / (double) question.getChoices().size();
+
+                                        double responseScore = numberOfCorrectChosen * scorePerCorrectChoice;
+                                        if(numberOfCorrectChosen == correctChoices.size() && chosenChoices.size() > numberOfCorrectChosen) {
+                                            responseScore = responseScore - (numberOfIncorrectChosen * scorePerIncorrectChoice);
+                                        }
+
+                                        DecimalFormat dfr = new DecimalFormat("#.##");
+                                        responseScore = Double.parseDouble(dfr.format(responseScore));
+
+                                        return Math.max(responseScore, 0);
+                                    })
+                                    .sum();
+                        })
+                ));
+    }
+
+    private Map<String, Double> getTotalMarksPerSubtopic(List<Question> questions) {
+        return questions.stream()
+                .collect(Collectors.groupingBy(
+                        question -> question.getSubtopic().getName(),  // Group by subtopic name
+                        Collectors.summingDouble(Question::getScore)  // Sum the scores of all questions
+                ));
+    }
+
+
+    private Map<String, Double> getPercentageScorePerSubtopic(Map<String, Double> scored, Map<String, Double> total) {
+        Map<String, Double> percentageScorePerSubtopic = new HashMap<>();
+
+        for (Map.Entry<String, Double> entry : scored.entrySet()) {
+            String subtopic = entry.getKey();
+            double marksScored = entry.getValue();
+
+            // Ensure total marks for the subtopic is not zero to avoid division by zero
+            if (total.containsKey(subtopic) && total.get(subtopic) != 0) {
+                double totalMarks = total.get(subtopic);
+                double percentageScore = (marksScored / totalMarks) * 100;
+
+                // Format the score to 2 decimal places
+                DecimalFormat dfs = new DecimalFormat("#.##");
+                percentageScore = Double.valueOf(dfs.format(percentageScore));
+
+                percentageScorePerSubtopic.put(subtopic, percentageScore);
+            }
+        }
+
+        return percentageScorePerSubtopic;
+    }
+
+
+    private String getFeedbackBySubtopic(Map<String, Double> percentageScores) {
+        String feedbackBySubTopic="";
+        // Add feedback for each subtopic (excluding "General")
+        for (Map.Entry<String, Double> entry : percentageScores.entrySet()) {
+            String subtopic = entry.getKey();
+            Double percentage = entry.getValue();
+
+            if (!subtopic.equals("General")) {  // Skip the "General" subtopic
+                feedbackBySubTopic += feedbackService.subtopicFeedback(percentage, subtopic)+" ";
+            }
+        }
+        return feedbackBySubTopic;
+    }
 
 
 }
