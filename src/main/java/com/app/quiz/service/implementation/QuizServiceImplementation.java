@@ -384,47 +384,11 @@ public class QuizServiceImplementation implements QuizService {
     }
 
 
-
-
-
     private void grading(Quiz quiz, Question question, AnswerResponse answerResponse) {
         // List of answer choices from the current response
         List<Choice> answerChoices = answerResponse.getAnswerChoices();
 
-        // List of correct choices for this question
-        List<Choice> correctChoices = question.getChoices().stream()
-                .filter(Choice::isCorrect)
-                .collect(Collectors.toList());
-
-        // Count of correct choices in the current response
-        int numberOfCorrectAnswerChoices = 0;
-
-        // Count of incorrect choices in the current response
-        int numberOfIncorrectAnswerChoices = 0;
-
-        for(Choice answerChoice : answerChoices) {
-            if(answerChoice == null) {
-                continue;
-            }
-            if(correctChoices.stream().anyMatch(choice -> choice.getId().equals(answerChoice.getId()))) {
-                numberOfCorrectAnswerChoices++;
-            } else {
-                numberOfIncorrectAnswerChoices++;
-            }
-        }
-
-        // Score for each correct and incorrect choice
-        double scorePerCorrectChoice = (double) question.getScore() / correctChoices.size();
-        double scorePerIncorrectChoice = (double) question.getScore() / question.getChoices().size();
-
-        // Score for the current response
-        double answerScore = numberOfCorrectAnswerChoices * scorePerCorrectChoice;
-
-        if(numberOfCorrectAnswerChoices == correctChoices.size() && answerChoices.size() > numberOfCorrectAnswerChoices) {
-            answerScore = answerScore - (numberOfIncorrectAnswerChoices * scorePerIncorrectChoice);
-        }
-
-        if(answerScore < 0) answerScore = 0; // Ensure the score doesn't drop below zero
+        double answerScore = calculateScoreForChoices(question, answerChoices);
 
         // Find the existing response for the current question
         Optional<Response> existingResponseOpt = quiz.getResponses().stream()
@@ -433,30 +397,7 @@ public class QuizServiceImplementation implements QuizService {
 
         if (existingResponseOpt.isPresent()) {
             // If a response exists, calculate its score and subtract from the final score
-            Response existingResponse = existingResponseOpt.get();
-
-            // Count of correct choices in the existing response
-            int existingNumberOfCorrectAnswerChoices = 0;
-            int existingNumberOfIncorrectAnswerChoices = 0;
-
-            for(Choice answerChoice : existingResponse.getChoices()) {
-                if(answerChoice == null) {
-                    continue;
-                }
-                if(correctChoices.stream().anyMatch(choice -> choice.getId().equals(answerChoice.getId()))) {
-                    existingNumberOfCorrectAnswerChoices++;
-                } else {
-                    existingNumberOfIncorrectAnswerChoices++;
-                }
-            }
-
-            // Score for the existing response
-            double existingAnswerScore = existingNumberOfCorrectAnswerChoices * scorePerCorrectChoice;
-            if(existingNumberOfCorrectAnswerChoices == correctChoices.size() && existingResponse.getChoices().size() > existingNumberOfCorrectAnswerChoices) {
-                existingAnswerScore = existingAnswerScore - (existingNumberOfIncorrectAnswerChoices * scorePerIncorrectChoice);
-            }
-
-            if(existingAnswerScore < 0) existingAnswerScore = 0; // Ensure the score doesn't drop below zero
+            double existingAnswerScore = calculateScoreForChoices(question, existingResponseOpt.get().getChoices());
 
             // Subtract the score for the existing response from the quiz's final score
             quiz.setFinalScore(quiz.getFinalScore() - existingAnswerScore);
@@ -466,6 +407,32 @@ public class QuizServiceImplementation implements QuizService {
         quiz.setFinalScore(quiz.getFinalScore() + answerScore);
     }
 
+
+
+    private double calculateScoreForChoices(Question question, List<Choice> chosenChoices) {
+        List<Choice> correctChoices = question.getChoices().stream()
+                .filter(Choice::isCorrect)
+                .collect(Collectors.toList());
+
+        int numberOfCorrectChosen = (int) chosenChoices.stream()
+                .filter(correctChoices::contains)
+                .count();
+
+        int numberOfIncorrectChosen = chosenChoices.size() - numberOfCorrectChosen;
+
+        double scorePerCorrectChoice = question.getScore() / (double) correctChoices.size();
+        double scorePerIncorrectChoice = question.getScore() / (double) question.getChoices().size();
+
+        double responseScore = numberOfCorrectChosen * scorePerCorrectChoice;
+        if (numberOfCorrectChosen == correctChoices.size() && chosenChoices.size() > numberOfCorrectChosen) {
+            responseScore = responseScore - (numberOfIncorrectChosen * scorePerIncorrectChoice);
+        }
+
+        DecimalFormat dfr = new DecimalFormat("#.##");
+        responseScore = Double.parseDouble(dfr.format(responseScore));
+
+        return Math.max(responseScore, 0);
+    }
 
 
 
@@ -554,6 +521,7 @@ public class QuizServiceImplementation implements QuizService {
     }
 
 
+
     private Quiz fetchQuiz(Long quizId) {
         Optional<Quiz> existingQuiz = quizRepository.findById(quizId);
         if(existingQuiz.isEmpty()) {
@@ -581,6 +549,7 @@ public class QuizServiceImplementation implements QuizService {
         return userAnswerChoices;
     }
 
+
     private Map<Long, List<Choice>> getCorrectAnswerChoices(List<Question> questions) {
         Map<Long, List<Choice>> correctAnswerChoices = new HashMap<>();
 
@@ -594,6 +563,8 @@ public class QuizServiceImplementation implements QuizService {
         return correctAnswerChoices;
     }
 
+
+
     private Map<Long, String> getAnswerExplanation(List<Question> questions) {
         Map<Long, String> answerExplanation = new HashMap<>();
 
@@ -603,6 +574,7 @@ public class QuizServiceImplementation implements QuizService {
 
         return answerExplanation;
     }
+
 
 
     private Double getTotalMarks(List<Question> questions) {
@@ -616,6 +588,7 @@ public class QuizServiceImplementation implements QuizService {
         DecimalFormat df = new DecimalFormat("#.##");
         return Double.parseDouble(df.format(value));
     }
+
 
     private Map<String, Double> getMarksScoredPerSubtopic(Quiz quiz, List<Question> questions) {
         return questions.stream()
