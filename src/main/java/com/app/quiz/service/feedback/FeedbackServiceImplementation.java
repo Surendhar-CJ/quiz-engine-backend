@@ -2,7 +2,6 @@ package com.app.quiz.service.feedback;
 
 
 import com.app.quiz.entity.*;
-import com.app.quiz.exception.custom.InvalidInputException;
 import com.app.quiz.exception.custom.ResourceNotFoundException;
 import com.app.quiz.repository.*;
 import com.app.quiz.requestBody.AnswerResponse;
@@ -135,13 +134,10 @@ public  class FeedbackServiceImplementation implements FeedbackService {
 
     private FeedbackResponse instantFeedback(Question question, int numberOfCorrectAnswerChoices, AnswerResponse answerResponse) {
         String result = getResult(question, numberOfCorrectAnswerChoices, answerResponse);
-        FeedbackResponse feedbackResponse;
         List<Choice> correctAnswer = null;
         String explanation = "";
 
-        feedbackResponse = new FeedbackResponse(result, correctAnswer, explanation);
-
-        return feedbackResponse;
+        return new FeedbackResponse(result, correctAnswer, explanation);
     }
 
 
@@ -149,28 +145,23 @@ public  class FeedbackServiceImplementation implements FeedbackService {
 
     private FeedbackResponse instantCorrectAnswerFeedback(Question question, int numberOfCorrectAnswerChoices, AnswerResponse answerResponse) {
         String result = getResult(question, numberOfCorrectAnswerChoices, answerResponse);
-        FeedbackResponse feedbackResponse;
         List<Choice> correctAnswer = findCorrectAnswers(question);
         String explanation = "";
 
-        feedbackResponse = new FeedbackResponse(result, correctAnswer, explanation);
-
-        return feedbackResponse;
+        return new FeedbackResponse(result, correctAnswer, explanation);
     }
 
 
 
     private FeedbackResponse instantDetailedFeedback(Question question, int numberOfCorrectAnswerChoices, AnswerResponse answerResponse) {
-
         String result = getResult(question, numberOfCorrectAnswerChoices, answerResponse);
-        FeedbackResponse feedbackResponse;
         List<Choice> correctAnswer = findCorrectAnswers(question);
         String explanation = question.getExplanation();
 
-        feedbackResponse = new FeedbackResponse(result, correctAnswer, explanation);
-
-        return feedbackResponse;
+        return new FeedbackResponse(result, correctAnswer, explanation);
     }
+
+
 
     private String getResult(Question question, int numberOfCorrectAnswerChoices, AnswerResponse answerResponse) {
         String result = "";

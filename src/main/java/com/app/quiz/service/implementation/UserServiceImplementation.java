@@ -156,73 +156,35 @@ public class UserServiceImplementation implements UserService {
 
 
     private Map<Long, Double> averagePercentageByTopic(User user) {
-        List<Quiz> quizList = user.getQuizList();
-        Map<Long, Double> sumPercentageByTopic = new HashMap<>();
-        Map<Long, Integer> countByTopic = new HashMap<>();
-
-        DecimalFormat df = new DecimalFormat("#.##");
-
-        for (Quiz quiz : quizList) {
-            if (!quiz.getIsCompleted() || quiz.getCompletedAt() == null) {
-                continue;
-            } else {
-                Long topicId = quiz.getTopic().getId();
-
-                // Calculate the percentage for the current quiz
-                Double totalScore = quiz.getServedQuestions().stream()
-                        .mapToDouble(Question::getScore)
-                        .sum();
-                Double finalScore = quiz.getFinalScore();
-                double quizPercentage = ((double) finalScore / totalScore) * 100;
-                quizPercentage = Double.valueOf(df.format(quizPercentage));
-
-                // Update the sum and count for the current topic
-                sumPercentageByTopic.put(topicId, sumPercentageByTopic.getOrDefault(topicId, 0.0) + quizPercentage);
-                countByTopic.put(topicId, countByTopic.getOrDefault(topicId, 0) + 1);
-            }
-        }
-
-        // Calculate the average percentage for each topic
-        Map<Long, Double> averagePercentageByTopic = new HashMap<>();
-        for (Long topicId : sumPercentageByTopic.keySet()) {
-            double averagePercentage = sumPercentageByTopic.get(topicId) / countByTopic.get(topicId);
-            averagePercentageByTopic.put(topicId, Double.valueOf(df.format(averagePercentage)));
-        }
-
-        return averagePercentageByTopic;
+        return calculateAveragePercentage(user.getQuizList());
     }
-
-
 
     private Map<Long, Double> averagePercentageByOtherUsersPerTopic(Long currentUserId) {
         List<Quiz> allQuizzes = quizRepository.findByUserIdNot(currentUserId);
+        return calculateAveragePercentage(allQuizzes);
+    }
 
+    private Map<Long, Double> calculateAveragePercentage(List<Quiz> quizzes) {
         Map<Long, Double> sumPercentageByTopic = new HashMap<>();
         Map<Long, Integer> countByTopic = new HashMap<>();
-
         DecimalFormat df = new DecimalFormat("#.##");
 
-        for (Quiz quiz : allQuizzes) {
+        for (Quiz quiz : quizzes) {
             if (!quiz.getIsCompleted() || quiz.getCompletedAt() == null) {
                 continue;
-            } else {
-                Long topicId = quiz.getTopic().getId();
-
-                // Calculate the percentage for the current quiz
-                Double totalScore = quiz.getServedQuestions().stream()
-                        .mapToDouble(Question::getScore)
-                        .sum();
-                Double finalScore = quiz.getFinalScore();
-                double quizPercentage = ((double) finalScore / totalScore) * 100;
-                quizPercentage = Double.valueOf(df.format(quizPercentage));
-
-                // Update the sum and count for the current topic
-                sumPercentageByTopic.put(topicId, sumPercentageByTopic.getOrDefault(topicId, 0.0) + quizPercentage);
-                countByTopic.put(topicId, countByTopic.getOrDefault(topicId, 0) + 1);
             }
+            Long topicId = quiz.getTopic().getId();
+            Double totalScore = quiz.getServedQuestions().stream()
+                    .mapToDouble(Question::getScore)
+                    .sum();
+            Double finalScore = quiz.getFinalScore();
+            double quizPercentage = ((double) finalScore / totalScore) * 100;
+            quizPercentage = Double.valueOf(df.format(quizPercentage));
+
+            sumPercentageByTopic.put(topicId, sumPercentageByTopic.getOrDefault(topicId, 0.0) + quizPercentage);
+            countByTopic.put(topicId, countByTopic.getOrDefault(topicId, 0) + 1);
         }
 
-        // Calculate the average percentage for each topic
         Map<Long, Double> averagePercentageByTopic = new HashMap<>();
         for (Long topicId : sumPercentageByTopic.keySet()) {
             double averagePercentage = sumPercentageByTopic.get(topicId) / countByTopic.get(topicId);
@@ -231,7 +193,6 @@ public class UserServiceImplementation implements UserService {
 
         return averagePercentageByTopic;
     }
-
 
 
 
