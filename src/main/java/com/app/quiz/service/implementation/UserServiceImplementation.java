@@ -60,60 +60,12 @@ public class UserServiceImplementation implements UserService {
 
     @Override
     public UserProfileDTO getUserById(Long id) {
-        Optional<User> existingUser = userRepository.findById(id);
+        User user = findUserById(id);
 
-        User user;
-        if(existingUser.isPresent()) {
-            user = existingUser.get();
-        }
-        else {
-            throw new ResourceNotFoundException("User with userId - "+id+" not found");
-        }
-
-        List<QuizResult> userQuizzes = user.getQuizList().stream()
-                .filter(quiz -> quiz.getIsCompleted() && quiz.getCompletedAt() != null)
-                .map(quiz -> quizServiceImplementation.getQuizResult(quiz.getId()))
-                .toList();
-
-        List<Topic> topics = topicRepository.findAllByUser(user);
-        List<UserTopicDTO> topicsCreated = topics.stream().map(topic -> {
-            Integer numberOfUsersRated = ratingRepository.countByTopicId(topic.getId());
-            return new UserTopicDTO(
-                    topic.getId(),
-                    topic.getName(),
-                    Double.parseDouble(String.format("%.1f", topic.getRating())),
-                    numberOfUsersRated
-            );
-        }).toList();
-
-
-        Long userId = user.getId();
-        List<Question> questionsCreatedByUser = questionRepository.findByUserId(userId);
-
-        List<UserQuestionDTO> questionsCreated = questionsCreatedByUser.stream()
-                .filter(question -> !question.getIsDeleted())
-                .map(question -> new UserQuestionDTO(
-                        question.getId(),
-                        question.getTopic().getName(),
-                        question.getText(),
-                        question.getChoices(),
-                        question.getExplanation()))
-                .collect(Collectors.toList());
-
-        List<UserFeedback> feedbacks = userFeedbackRepository.findByFeedbackForUserId(userId);
-
-        List<UserFeedbackDTO> feedbacksReceived = feedbacks.stream().map(feedback -> {
-            User feedbackByUser = userRepository.findById(feedback.getFeedbackByUserId())
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-            Topic feedbackTopic = topicRepository.findById(feedback.getTopicId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Topic not found"));
-
-            return new UserFeedbackDTO(
-                    feedbackByUser.getFirstName() + " " + feedbackByUser.getLastName(),
-                    feedbackTopic.getName(),
-                    feedback.getComment()
-            );
-        }).collect(Collectors.toList());
+        List<QuizResult> userQuizzes = getUserQuizzes(user);
+        List<UserTopicDTO> topicsCreated = getUserTopics(user);
+        List<UserQuestionDTO> questionsCreated = getUserQuestions(user);
+        List<UserFeedbackDTO> feedbacksReceived = getUserFeedbacks(user);
 
         Map<Long, Double> averageScoreByTopic = averagePercentageByTopic(user);
         Map<Long, Double> averageScoreByOtherUsersPerTopic = averagePercentageByOtherUsersPerTopic(user.getId());
@@ -131,6 +83,58 @@ public class UserServiceImplementation implements UserService {
                 averageScoreByOtherUsersPerTopic
         );
     }
+
+    private User findUserById(Long id) {
+        return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User with userId - "+id+" not found"));
+    }
+
+    private List<QuizResult> getUserQuizzes(User user) {
+        return user.getQuizList().stream()
+                .filter(quiz -> quiz.getIsCompleted() && quiz.getCompletedAt() != null)
+                .map(quiz -> quizServiceImplementation.getQuizResult(quiz.getId()))
+                .toList();
+    }
+
+    private List<UserTopicDTO> getUserTopics(User user) {
+        return topicRepository.findAllByUser(user).stream().map(topic -> {
+            Integer numberOfUsersRated = ratingRepository.countByTopicId(topic.getId());
+            return new UserTopicDTO(
+                    topic.getId(),
+                    topic.getName(),
+                    Double.parseDouble(String.format("%.1f", topic.getRating())),
+                    numberOfUsersRated
+            );
+        }).toList();
+    }
+
+    private List<UserQuestionDTO> getUserQuestions(User user) {
+        Long userId = user.getId();
+        return questionRepository.findByUserId(userId).stream()
+                .filter(question -> !question.getIsDeleted())
+                .map(question -> new UserQuestionDTO(
+                        question.getId(),
+                        question.getTopic().getName(),
+                        question.getText(),
+                        question.getChoices(),
+                        question.getExplanation()))
+                .collect(Collectors.toList());
+    }
+
+    private List<UserFeedbackDTO> getUserFeedbacks(User user) {
+        Long userId = user.getId();
+        return userFeedbackRepository.findByFeedbackForUserId(userId).stream().map(feedback -> {
+            User feedbackByUser = userRepository.findById(feedback.getFeedbackByUserId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            Topic feedbackTopic = topicRepository.findById(feedback.getTopicId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Topic not found"));
+            return new UserFeedbackDTO(
+                    feedbackByUser.getFirstName() + " " + feedbackByUser.getLastName(),
+                    feedbackTopic.getName(),
+                    feedback.getComment()
+            );
+        }).collect(Collectors.toList());
+    }
+
 
 
 
