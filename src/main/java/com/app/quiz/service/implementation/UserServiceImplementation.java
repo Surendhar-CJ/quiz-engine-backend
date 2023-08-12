@@ -174,31 +174,41 @@ public class UserServiceImplementation implements UserService {
         DecimalFormat df = new DecimalFormat("#.##");
 
         for (Quiz quiz : quizzes) {
-            if (!quiz.getIsCompleted() || quiz.getCompletedAt() == null) {
-                continue;
-            }
-            Long topicId = quiz.getTopic().getId();
-            Double totalScore = quiz.getServedQuestions().stream()
-                    .mapToDouble(Question::getScore)
-                    .sum();
-            Double finalScore = quiz.getFinalScore();
-            double quizPercentage = ((double) finalScore / totalScore) * 100;
-            quizPercentage = Double.valueOf(df.format(quizPercentage));
+            if (isQuizValid(quiz)) {
+                Long topicId = quiz.getTopic().getId();
+                double quizPercentage = computeQuizPercentage(quiz, df);
 
-            sumPercentageByTopic.put(topicId, sumPercentageByTopic.getOrDefault(topicId, 0.0) + quizPercentage);
-            countByTopic.put(topicId, countByTopic.getOrDefault(topicId, 0) + 1);
+                sumPercentageByTopic.put(topicId, sumPercentageByTopic.getOrDefault(topicId, 0.0) + quizPercentage);
+                countByTopic.put(topicId, countByTopic.getOrDefault(topicId, 0) + 1);
+            }
         }
 
+        return computeAveragePercentageByTopic(sumPercentageByTopic, countByTopic, df);
+    }
+
+    private boolean isQuizValid(Quiz quiz) {
+        return quiz.getIsCompleted() && quiz.getCompletedAt() != null;
+    }
+
+    private double computeQuizPercentage(Quiz quiz, DecimalFormat df) {
+        Double totalScore = quiz.getServedQuestions().stream()
+                .mapToDouble(Question::getScore)
+                .sum();
+        Double finalScore = quiz.getFinalScore();
+        double quizPercentage = ((double) finalScore / totalScore) * 100;
+        return Double.valueOf(df.format(quizPercentage));
+    }
+
+    private Map<Long, Double> computeAveragePercentageByTopic(Map<Long, Double> sumPercentageByTopic,
+                                                              Map<Long, Integer> countByTopic,
+                                                              DecimalFormat df) {
         Map<Long, Double> averagePercentageByTopic = new HashMap<>();
         for (Long topicId : sumPercentageByTopic.keySet()) {
             double averagePercentage = sumPercentageByTopic.get(topicId) / countByTopic.get(topicId);
             averagePercentageByTopic.put(topicId, Double.valueOf(df.format(averagePercentage)));
         }
-
         return averagePercentageByTopic;
     }
-
-
 
 
 
