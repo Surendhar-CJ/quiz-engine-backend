@@ -364,9 +364,6 @@ public class QuizServiceImplementation implements QuizService {
 
 
 
-
-
-
     private void answerValidation(AnswerResponse answerResponse, Question question) {
         List<Choice> answerChoices = answerResponse.getAnswerChoices();
 
@@ -383,8 +380,8 @@ public class QuizServiceImplementation implements QuizService {
         }
     }
 
-
-    private void grading(Quiz quiz, Question question, AnswerResponse answerResponse) {
+    @Override
+    public void grading(Quiz quiz, Question question, AnswerResponse answerResponse) {
         List<Choice> correctChoices = getCorrectChoices(question);
         double currentResponseScore = computeResponseScore(correctChoices, answerResponse.getAnswerChoices(), question.getScore());
 
