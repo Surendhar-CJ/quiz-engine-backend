@@ -22,7 +22,7 @@ public class QuestionController {
         this.questionService = questionService;
     }
 
-    @GetMapping("/topics/{topicId}/questions")
+    @GetMapping("/questions/{topicId}")
     public ResponseEntity<List<Question>> getAllQuestions(@PathVariable("topicId") Long topicId) {
        return new ResponseEntity<>( questionService.getAllQuestionsByTopic(topicId), HttpStatus.OK);
     }

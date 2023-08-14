@@ -200,7 +200,7 @@ public class QuizServiceImplementation implements QuizService {
         //To validate if the answer response contains the correct last served question
         if (!receivedQuestion.equals(questionRepository.findById(answerResponse.getQuestionId()).orElseThrow(
                 () -> new ResourceNotFoundException("Question with id "+answerResponse.getQuestionId()+" is not found")))) {
-            throw new InvalidInputException("Invalid question received as response");
+            throw new InvalidInputException("Invalid question id received as response");
         }
 
         // Validate the answer choices
