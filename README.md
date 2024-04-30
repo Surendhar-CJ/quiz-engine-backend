@@ -1,8 +1,7 @@
 # Quizflect
 Quiz application.
 ## Overview
-Quizflect is a quiz engine developed to support students learning by providing automated feedback and performance tracking across quizzes. It also allows users to create and 
-challenge themselves with quizzes created by other users.
+Quizflect is a quiz engine developed to support students learning by providing automated feedback and performance tracking across quizzes. It enables users to create quizzes, participate in quizzes created by others, and contribute questions to collaborative quizzes.
 ## Features
 1. **Quiz Creation:** Users can create their quizzes, customize question types, and set difficulty levels.
 2. **Quiz Participation:** Users can engage in quizzes created by other users.
